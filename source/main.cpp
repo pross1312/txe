@@ -6,11 +6,11 @@
 void init_editor(const char *font_path);
 
 int main() {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
-    InitWindow(100, 100, "Txe");
-    const float FONT_SIZE = 26.0f;
-    const char *FONT_PATH ="resources/fonts/JetBrainsMono-Regular.ttf";
-    const int WIDTH = GetRenderWidth(), HEIGHT = GetRenderHeight(), FPS = 30;
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MINIMIZED);
+    InitWindow(1300, 900, "Txe");
+    const float FONT_SIZE = 30.0f;
+    const char *FONT_PATH ="resources/fonts/iosevka-term-regular.ttf";
+    const int WIDTH = GetRenderWidth(), HEIGHT = GetRenderHeight(), FPS = 60;
     printf("%d\n", WIDTH);
 
     SetTargetFPS(FPS);
@@ -18,6 +18,7 @@ int main() {
     EditorRenderer renderer(FONT_PATH, FONT_SIZE);
     while (!WindowShouldClose()) {
         BeginDrawing();
+        BeginMode2D(renderer.camera);
         int c;
         while ((c = GetCharPressed())) { editor.append((char)c); }
         while ((c = GetKeyPressed())) {
@@ -26,17 +27,21 @@ int main() {
                 editor.append('\n');
                 break;
             case KEY_BACKSPACE:
-                editor.pop();
+                if (editor.buffer.size() > 0) editor.pop();
                 break;
             default:
                 break;
             }
         }
         ClearBackground(BLACK);
-        const vector<string_view> lines = editor.lines();
-        for (size_t i = 0; i < lines.size(); i++) {
-            renderer.draw_line(lines[i], WHITE, CLITERAL(Vector2) {.x = 0.0f, .y = float(int(i)*renderer.font_height())});
+        Vector2 cursor_pos {.y = -float(renderer.font_height())};
+        for (const string_view& line : editor.lines()) {
+            cursor_pos.y += renderer.font_height();
+            Vector2 size = renderer.draw_line(line, WHITE, CLITERAL(Vector2) {.x = 0.0f, .y = cursor_pos.y});
+            cursor_pos.x = size.x;
         }
+        renderer.draw_cursor(cursor_pos, WHITE);
+        EndMode2D();
         EndDrawing();
     }
     CloseWindow();

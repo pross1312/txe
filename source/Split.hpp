@@ -20,12 +20,15 @@ private:
 
         // Prefix increment
         Iterator& operator++() {
-            if (pos != string::npos)  {
-                pos = content.find(c, start);
-                m_ptr = content.substr(start, pos - start);
-                start = pos + 1;
-            } else {
-                m_ptr = string_view(content.data() + content.size(), string_view::npos);
+            if (!end) {
+                if (m_ptr.data() + m_ptr.size() == content.data() + content.size()) {
+                    end = true;
+                    m_ptr = string_view(content.data() + content.size(), 0);
+                } else {
+                    size_t pos = content.find(c, start);
+                    m_ptr = content.substr(start, pos - start);
+                    start = pos + 1;
+                }
             }
             return *this;
         }
@@ -38,15 +41,16 @@ private:
         }
 
         friend bool operator== (const Iterator& a, const Iterator& b) {
-            return a.m_ptr.data() == b.m_ptr.data() && a.m_ptr.size() == b.m_ptr.size();
+            return a.content == b.content && a.m_ptr == b.m_ptr && a.end == b.end;
         };
         friend bool operator!= (const Iterator& a, const Iterator& b) { return !(a == b); };
         friend Split;
     private:
-        Iterator(string_view content, string_view m_ptr): content(content), m_ptr(m_ptr) {}
+        Iterator(string_view content): content(content), m_ptr(content.data() + content.size(), 0), end(true) {}
         string_view content, m_ptr;
         char c;
-        size_t pos = 0, start = 0;
+        bool end = false;
+        size_t start = 0;
     };
 
 private:
@@ -55,7 +59,7 @@ private:
 public:
     Split(string_view content, char c): content(content), c(c) {}
     Iterator begin() { return ++Iterator(content, c); }
-    Iterator end()   { return Iterator(content, string_view(content.data()+content.size(), string_view::npos)); }
+    Iterator end()   { return Iterator(content); }
 };
 
 #endif // SPLIT_HPP

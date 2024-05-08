@@ -34,7 +34,7 @@ int main() {
             }
         }
         ClearBackground(BLACK);
-        Vector2 cursor_pos {.y = -float(renderer.font_height())};
+        Vector2 cursor_pos { .x = 0.0f, .y = -float(renderer.font_height())};
         for (const string_view& line : editor.lines()) {
             cursor_pos.y += renderer.font_height();
             Vector2 size = renderer.draw_line(line, WHITE, CLITERAL(Vector2) {.x = 0.0f, .y = cursor_pos.y});
@@ -44,6 +44,7 @@ int main() {
         EndMode2D();
         EndDrawing();
     }
+    renderer.unload();
     CloseWindow();
     return 0;
 }

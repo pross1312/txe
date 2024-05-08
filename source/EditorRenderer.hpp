@@ -14,12 +14,12 @@ struct EditorRenderer {
     const float CAMERA_SPEED = 100.0f;
     const int CURSOR_WIDTH = 2;
     const Vector2 PADDING = { .x = 20.0f, .y = 5.0f };
-    Font font {0};
+    Font font {};
     float fs {0.0};
     Camera2D camera;
 
 #ifdef USE_SDF_FONT
-    Shader shader {0};
+    Shader shader {};
 #endif // USE_SDF_FONT
 
     EditorRenderer(const char *font_path, float font_size): fs{font_size} {
@@ -66,11 +66,11 @@ struct EditorRenderer {
         // }
     }
 
-    ~EditorRenderer() {
+    void unload() {
+        UnloadFont(font);
 #ifdef USE_SDF_FONT
         UnloadShader(shader);
 #endif // USE_SDF_FONT
-        UnloadFont(font);
     }
 
     inline int font_height() { return font.baseSize; }

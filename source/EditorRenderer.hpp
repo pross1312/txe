@@ -46,24 +46,24 @@ struct EditorRenderer {
 #endif // USE_SDF_FONT
     }
 
-    inline Vector2 draw_line(string_view line, Color c, Vector2 pos) {
+    inline void draw_line(string_view line, Color c, Vector2 pos) {
+        const char *text = TextFormat("%.*s", line.size(), line.data());
 #ifdef USE_SDF_FONT
             BeginShaderMode(shader);
-                DrawTextEx(font, TextFormat("%.*s", (int)line.size(), line.data()), pos, fs, SPACING, c);
+                DrawTextEx(font, text, pos, fs, SPACING, c);
             EndShaderMode();
 #else
-        DrawTextEx(font, TextFormat("%.*s", (int)line.size(), line.data()), pos, fs, SPACING, c);
+        DrawTextEx(font, text, pos, fs, SPACING, c);
 #endif // USE_SDF_FONT
-        return MeasureTextEx(font, line.data(), fs, SPACING);
+    }
+
+    inline Vector2 measure_text(string_view sv) {
+        const char *text = TextFormat("%.*s", sv.size(), sv.data());
+        return MeasureTextEx(font, text, fs, SPACING);
     }
 
     inline void draw_cursor(Vector2 pos, Color c) {
         DrawRectangle(pos.x, pos.y, CURSOR_WIDTH, fs, c);
-        // float dis = Vector2Distance(pos, camera.target);
-        // if (dis > CAMERA_SPEED*1.0f) {
-        //     camera.target.x += (pos.x - camera.target.x)/dis * CAMERA_SPEED * GetFrameTime();
-        //     camera.target.y += (pos.y - camera.target.y)/dis * CAMERA_SPEED * GetFrameTime();
-        // }
     }
 
     void unload() {

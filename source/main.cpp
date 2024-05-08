@@ -16,34 +16,36 @@ int main() {
     SetTargetFPS(FPS);
     Editor editor;
     EditorRenderer renderer(FONT_PATH, FONT_SIZE);
+
     while (!WindowShouldClose()) {
         BeginDrawing();
         BeginMode2D(renderer.camera);
+
         int c;
-        while ((c = GetCharPressed())) { editor.append((char)c); }
-        while ((c = GetKeyPressed())) {
-            switch (c) {
-            case KEY_ENTER:
-                editor.append('\n');
-                break;
-            case KEY_BACKSPACE:
-                if (editor.buffer.size() > 0) editor.pop();
-                break;
-            default:
-                break;
-            }
-        }
+        while ((c = GetCharPressed())) { editor.append_at_cursor((char)c); }
+        if (IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE)) editor.pop_at_cursor();
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressedRepeat(KEY_ENTER))   editor.append_at_cursor('\n');
+        if (IsKeyPressed(KEY_LEFT) || IsKeyPressedRepeat(KEY_LEFT))     editor.move_cursor_left(1);
+        if (IsKeyPressed(KEY_RIGHT) || IsKeyPressedRepeat(KEY_RIGHT))   editor.move_cursor_right(1);
+
         ClearBackground(BLACK);
-        Vector2 cursor_pos { .x = 0.0f, .y = -float(renderer.font_height())};
-        for (const string_view& line : editor.lines()) {
-            cursor_pos.y += renderer.font_height();
-            Vector2 size = renderer.draw_line(line, WHITE, CLITERAL(Vector2) {.x = 0.0f, .y = cursor_pos.y});
-            cursor_pos.x = size.x;
+
+        Vector2 pos = Vector2Zero();
+        size_t i = 0;
+        for (const string_view &line : editor.lines()) {
+            renderer.draw_line(line, WHITE, pos);
+            if (i == editor.cursor.row) {
+                Vector2 size = renderer.measure_text(line.substr(0, editor.cursor.col));
+                renderer.draw_cursor(Vector2{.x = size.x, .y = pos.y}, WHITE);
+            }
+            pos.y += renderer.font_height();
+            i++;
         }
-        renderer.draw_cursor(cursor_pos, WHITE);
+
         EndMode2D();
         EndDrawing();
     }
+
     renderer.unload();
     CloseWindow();
     return 0;

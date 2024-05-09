@@ -2,6 +2,7 @@
 #define Editor_HPP
 
 #include <string>
+#include <numeric>
 #include <assert.h>
 #include <string.h>
 #include <vector>
@@ -10,19 +11,17 @@ using namespace std;
 
 
 struct Editor {
-    struct Cursor { size_t row = 0, col = 0, idx = 0; };
+    struct Cursor { int row = 0, col = 0, idx = 0; };
     Cursor cursor;
     string buffer;
-    vector<size_t> line_size;
+    vector<int> line_size;
 
-    Editor(): cursor(), buffer(), line_size(1ull, 0) {}
+    Editor(): cursor(), buffer(), line_size(1ull, 0ull) {}
 
-    inline void add_new_line(size_t size) {
+    inline void add_new_line(int size) {
         cursor.col = 0;
         cursor.row++;
-        if (cursor.row == line_size.size()) {
-            line_size.push_back(size);
-        }
+        line_size.insert(line_size.begin() + cursor.row, size);
     }
 
     inline void append_at_cursor(char c) {
@@ -31,7 +30,7 @@ struct Editor {
         cursor.idx++;
         cursor.col++;
         if (c == '\n') {
-            size_t new_line_size = line_size[cursor.row] - cursor.col;
+            int new_line_size = line_size[cursor.row] - cursor.col;
             line_size[cursor.row] -= new_line_size;
             add_new_line(new_line_size);
         }
@@ -48,10 +47,38 @@ struct Editor {
             cursor.row--;
         } else {
             cursor.col--;
+            line_size[cursor.row]--;
         }
     }
 
-    inline void move_cursor_left(size_t amount) {
+    inline void move_cursor_up(int amount) {
+        if (cursor.row < amount) {
+            cursor.idx = 0;
+            cursor.col = 0;
+        } else {
+            cursor.row -= amount;
+            if (cursor.col > line_size[cursor.row]-1) {
+                cursor.col = line_size[cursor.row]-1;
+            }
+            cursor.idx = std::accumulate(line_size.begin(), line_size.begin() + cursor.row, 0) + cursor.col;
+        }
+    }
+
+    inline void move_cursor_down(int amount) {
+        if (cursor.row + amount >= (int)line_size.size()) {
+            cursor.row = (int)line_size.size() - 1;
+            cursor.col = line_size[cursor.row];
+            cursor.idx = buffer.size();
+        } else {
+            cursor.row += amount;
+            if (cursor.col > line_size[cursor.row]-1) {
+                cursor.col = line_size[cursor.row]-1;
+            }
+            cursor.idx = std::accumulate(line_size.begin(), line_size.begin() + cursor.row, 0) + cursor.col;
+        }
+    }
+
+    inline void move_cursor_left(int amount) {
         if (cursor.idx >= amount) cursor.idx -= amount;
         else cursor.idx = 0;
         while (amount > 0) {
@@ -70,14 +97,14 @@ struct Editor {
         }
     }
 
-    inline void move_cursor_right(size_t amount) {
-        if (buffer.size() - cursor.idx <= amount) cursor.idx = buffer.size();
+    inline void move_cursor_right(int amount) {
+        if ((int)buffer.size() - 1 - cursor.idx <= amount) cursor.idx = buffer.size();
         else cursor.idx += amount;
         while (amount > 0) {
-            if (line_size[cursor.row] - cursor.col - 1 >=  amount) { // skip \n
+            if (line_size[cursor.row] - 1 - cursor.col >=  amount) { // skip \n
                 cursor.col += amount;
                 break;
-            } else if (cursor.row == line_size.size()-1) {
+            } else if (cursor.row == (int)line_size.size()-1) {
                 cursor.col = line_size[cursor.row];
                 break;
             } else {

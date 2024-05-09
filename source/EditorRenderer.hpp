@@ -10,10 +10,11 @@ using std::string_view;
 
 
 struct EditorRenderer {
-    const float SPACING = 1.0f;
+    const float SPACING = 0.0f;
     const float CAMERA_SPEED = 100.0f;
     const int CURSOR_WIDTH = 2;
-    const Vector2 PADDING = { .x = 20.0f, .y = 5.0f };
+    const Vector2 PADDING_BOTTOM_RIGHT { .x = 50.0f, .y = 10.0f };
+    const Vector2 PADDING_TOP_LEFT     { .x = 10.0f, .y = 5.0f };
     Font font {};
     float fs {0.0};
     Camera2D camera;
@@ -24,7 +25,7 @@ struct EditorRenderer {
 
     EditorRenderer(const char *font_path, float font_size): fs{font_size} {
 
-    camera.target = Vector2{ .x = -PADDING.x, .y = -PADDING.y };
+    camera.target = Vector2{ .x = -PADDING_TOP_LEFT.x, .y = -PADDING_TOP_LEFT.y };
     camera.offset = Vector2Zero();
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
@@ -71,6 +72,14 @@ struct EditorRenderer {
 #ifdef USE_SDF_FONT
         UnloadShader(shader);
 #endif // USE_SDF_FONT
+    }
+
+    inline void bring_point_into_view(Vector2 point) {
+        Vector2 screen {.x = (float)GetScreenWidth(), .y = (float)GetScreenHeight()};
+        if (point.x > camera.target.x + screen.x) camera.target.x += point.x - (camera.target.x + screen.x) + PADDING_BOTTOM_RIGHT.x;
+        else if (point.x < camera.target.x) camera.target.x -= camera.target.x - point.x + PADDING_TOP_LEFT.x;
+        if (point.y + font_height() > camera.target.y + screen.y) camera.target.y += point.y + font_height() - (camera.target.y + screen.y) + PADDING_BOTTOM_RIGHT.y;
+        else if (point.y < camera.target.y) camera.target.y -= camera.target.y - point.y + PADDING_TOP_LEFT.y;
     }
 
     inline int font_height() { return font.baseSize; }

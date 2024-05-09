@@ -29,8 +29,10 @@ int main() {
         ClearBackground(BLACK);
 
         Vector2 pos = Vector2Zero();
-        int i = 0;
-        for (const string_view &line : editor.lines()) {
+        const char *ptr = editor.buffer.data();
+        int n_line = (int)editor.line_size.size();
+        for (int i = 0; i < n_line; i++) {
+            string_view line(ptr, editor.line_size[i] - (i == n_line-1 ? 0 : 1));
             renderer.draw_line(line, WHITE, pos);
             if (i == editor.cursor.row) {
                 Vector2 size = renderer.measure_text(line.substr(0, editor.cursor.col));
@@ -39,7 +41,7 @@ int main() {
                 renderer.bring_point_into_view(cursor_pos);
             }
             pos.y += renderer.font_height();
-            i++;
+            ptr += editor.line_size[i];
         }
 
         EndMode2D();

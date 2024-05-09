@@ -47,8 +47,8 @@ struct Editor {
             cursor.row--;
         } else {
             cursor.col--;
-            line_size[cursor.row]--;
         }
+        line_size[cursor.row]--;
     }
 
     inline void move_cursor_up(int amount) {

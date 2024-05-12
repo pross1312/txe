@@ -3,7 +3,7 @@
 #include "Editor.hpp"
 #include "EditorRenderer.hpp"
 
-int main() {
+int main(int argc, const char **argv) {
     SetConfigFlags(FLAG_WINDOW_MINIMIZED);
     int factor = 100;
     InitWindow(16*factor, 9*factor, "Txe");
@@ -12,6 +12,11 @@ int main() {
 
     SetTargetFPS(60);
     Editor editor;
+    if (argc > 1) {
+        if (!editor.load(argv[1])) {
+            abort();
+        }
+    }
     EditorRenderer renderer(FONT_PATH, FONT_SIZE);
 
     while (!WindowShouldClose()) {
@@ -25,6 +30,8 @@ int main() {
         if (IsKeyPressed(KEY_RIGHT) || IsKeyPressedRepeat(KEY_RIGHT))         editor.move_cursor_right(1);
         if (IsKeyPressed(KEY_UP) || IsKeyPressedRepeat(KEY_UP))               editor.move_cursor_up(1);
         if (IsKeyPressed(KEY_DOWN) || IsKeyPressedRepeat(KEY_DOWN))           editor.move_cursor_down(1);
+        if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && IsKeyPressed(KEY_S)) editor.save();
+        if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && IsKeyPressed(KEY_P)) editor.switch_mode(Mode::File);
 
         ClearBackground(BLACK);
 

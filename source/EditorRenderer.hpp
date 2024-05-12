@@ -27,7 +27,7 @@ struct EditorRenderer {
 
     EditorRenderer(const char *font_path, float font_size): fs{font_size} {
 
-    camera.target = Vector2{ .x = -PADDING_TOP_LEFT.x, .y = -PADDING_TOP_LEFT.y };
+    camera.target = Vector2Zero();
     camera.offset = Vector2Zero();
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
@@ -107,18 +107,45 @@ struct EditorRenderer {
         else if (point.y < camera.target.y) camera.target.y -= camera.target.y - point.y + PADDING_TOP_LEFT.y;
     }
 
-    inline void render(const Editor &editor) {
-        BeginMode2D(camera);
+    inline void render_text(const Editor &editor) {
         render_cursor = Vector2Zero();
         if (editor.cursor.idx == 0) {
             put_cursor(WHITE);
+            bring_point_into_view(render_cursor);
         }
         for (size_t i = 0; i < editor.buffer.size(); i++) {
             Cell cell = editor.buffer[i];
             put_char_attr(cell);
             if (i+1 == editor.cursor.idx) {
                 put_cursor(WHITE);
+                bring_point_into_view(render_cursor);
             }
+        }
+    }
+
+    inline void render_file_explorer(const Editor &editor) {
+        size_t line = 0;
+        size_t n_path_len = editor.line_size[line++];
+
+        const float line_thickness = 2.0f;
+        const float path_box_height = fs*2;
+        DrawLineEx(Vector2{0.0f, path_box_height}, Vector2{(float)GetScreenWidth(), path_box_height}, line_thickness, WHITE);
+        render_cursor = Vector2{.x = 0.0f, .y = (path_box_height - fs)*0.5f};
+        for (size_t i = 0; i < editor.line_size[0]; i++) {
+            put_char_attr(editor.buffer[i]);
+        }
+        put_cursor(WHITE);
+    }
+
+    inline void render(const Editor &editor) {
+        BeginMode2D(camera);
+        switch (editor.mode) {
+        case Mode::Text:
+            render_text(editor);
+            break;
+        case Mode::File:
+            render_file_explorer(editor);
+            break;
         }
         EndMode2D();
     }

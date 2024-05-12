@@ -2,14 +2,12 @@
 #define Editor_HPP
 
 #include <string>
-#include <numeric>
+#include <filesystem>
 #include <assert.h>
-#include <string.h>
 #include <vector>
-#include <list>
 #include <optional>
 #include <raylib.h>
-#include "Split.hpp"
+namespace fs = std::filesystem;
 using namespace std;
 
 constexpr Color DEFAULT_BG = BLACK;
@@ -32,9 +30,18 @@ struct Editor {
     vector<size_t> line_size;
     Mode mode;
 
-    Editor(): cursor(), buffer(), line_size(1ull, 0ull), mode(Mode::Text) {}
+    fs::path current_dir;
+    optional<string> file_name;
+
+    Editor();
+    Editor(const char *file);
 
     void switch_mode(Mode m);
+
+    bool load(const char *file);
+    bool save();
+
+    void put_file_explorer();
 
     void add_new_line(size_t size);
     void append_at_cursor(char c, Color fg = DEFAULT_FG, optional<Color> bg = nullopt);
@@ -45,6 +52,7 @@ struct Editor {
     void move_cursor_down(size_t amount);
     void move_cursor_left(size_t amount);
     void move_cursor_right(size_t amount);
+    void move_cursor_to(size_t row, size_t col);
 };
 
 #endif // EDITOR_HPP

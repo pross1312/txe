@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include "Editor.hpp"
+#include "TextEditor.h"
+#include "FileExplorer.h"
 #include "EditorRenderer.hpp"
 
 int main(int argc, const char **argv) {
@@ -11,9 +12,9 @@ int main(int argc, const char **argv) {
     const char *FONT_PATH ="resources/fonts/iosevka-term-regular.ttf";
 
     SetTargetFPS(60);
-    Editor editor;
+    Editor *editor = new TextEditor;
     if (argc > 1) {
-        if (!editor.load(argv[1])) {
+        if (editor->type == Mode::Text && !static_cast<TextEditor*>(editor)->load(argv[1])) {
             abort();
         }
     }
@@ -23,15 +24,19 @@ int main(int argc, const char **argv) {
         BeginDrawing();
 
         int c;
-        while ((c = GetCharPressed())) { editor.append_at_cursor((char)c); }
-        if (IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE)) editor.pop_at_cursor();
-        if (IsKeyPressed(KEY_ENTER) || IsKeyPressedRepeat(KEY_ENTER))         editor.append_at_cursor('\n');
-        if (IsKeyPressed(KEY_LEFT) || IsKeyPressedRepeat(KEY_LEFT))           editor.move_cursor_left(1);
-        if (IsKeyPressed(KEY_RIGHT) || IsKeyPressedRepeat(KEY_RIGHT))         editor.move_cursor_right(1);
-        if (IsKeyPressed(KEY_UP) || IsKeyPressedRepeat(KEY_UP))               editor.move_cursor_up(1);
-        if (IsKeyPressed(KEY_DOWN) || IsKeyPressedRepeat(KEY_DOWN))           editor.move_cursor_down(1);
-        if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && IsKeyPressed(KEY_S)) editor.save();
-        if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && IsKeyPressed(KEY_P)) editor.switch_mode(Mode::File);
+        while ((c = GetCharPressed())) {
+            editor->append_at_cursor((char)c);
+        }
+        if (IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE)) editor->pop_at_cursor();
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressedRepeat(KEY_ENTER))         editor->append_at_cursor('\n');
+        if (IsKeyPressed(KEY_LEFT) || IsKeyPressedRepeat(KEY_LEFT))           editor->move_cursor_left(1);
+        if (IsKeyPressed(KEY_RIGHT) || IsKeyPressedRepeat(KEY_RIGHT))         editor->move_cursor_right(1);
+        if (IsKeyPressed(KEY_UP) || IsKeyPressedRepeat(KEY_UP))               editor->move_cursor_up(1);
+        if (IsKeyPressed(KEY_DOWN) || IsKeyPressedRepeat(KEY_DOWN))           editor->move_cursor_down(1);
+        if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && IsKeyPressed(KEY_S)) {
+            if (editor->type == Mode::Text) static_cast<TextEditor*>(editor)->save();
+        }
+        // if ((IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && IsKeyPressed(KEY_P)) editor.switch_mode(Mode::File);
 
         ClearBackground(BLACK);
 

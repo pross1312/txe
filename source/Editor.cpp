@@ -1,30 +1,6 @@
-#include "Editor.hpp"
+#include "Editor.h"
 #include <numeric>
-#include <string.h>
-#include <fstream>
-
-Editor::Editor(): cursor(), buffer(), line_size(1ull, 0ull), mode(Mode::Text), current_dir(fs::current_path()), file_name(nullopt) {}
-Editor::Editor(const char *file): Editor() {
-    if (!load(file)) {
-        abort();
-    }
-}
-
-void Editor::switch_mode(Mode m) {
-    mode = m;
-    buffer.clear();
-    line_size.clear();
-    line_size.push_back(0);
-    cursor.idx = cursor.col = cursor.row = 0;
-    switch (mode) {
-    case Mode::Text:
-        if (file_name.has_value()) load((current_dir / file_name.value()).c_str());
-        break;
-    case Mode::File:
-        put_file_explorer();
-        break;
-    }
-}
+using namespace std;
 
 void Editor::add_new_line(size_t size) {
     cursor.col = 0;
@@ -32,7 +8,7 @@ void Editor::add_new_line(size_t size) {
     line_size.insert(line_size.begin() + cursor.row, size);
 }
 
-void Editor::append_at_cursor(char c, Color fg, optional<Color> bg) {
+void Editor::append_at_cursor(char c, Color fg, std::optional<Color> bg) {
     Cell cell{c, fg, bg};
     buffer.insert(buffer.begin() + cursor.idx, 1, cell);
     cursor.idx++;
@@ -58,6 +34,14 @@ void Editor::pop_at_cursor() {
         cursor.col--;
     }
     line_size[cursor.row]--;
+}
+
+void Editor::set_cells_color(size_t start, size_t len, Color fg, optional<Color> bg) {
+    size_t length = std::min(start + len, buffer.size());
+    for (size_t i = start; i < length; i++) {
+        buffer[i].bg = bg;
+        buffer[i].fg = fg;
+    }
 }
 
 void Editor::move_cursor_to(size_t row, size_t col) {
@@ -122,14 +106,6 @@ void Editor::move_cursor_left(size_t amount) {
     }
 }
 
-void Editor::set_cells_color(size_t start, size_t len, Color fg, optional<Color> bg) {
-    size_t length = std::min(start + len, buffer.size());
-    for (size_t i = start; i < length; i++) {
-        buffer[i].bg = bg;
-        buffer[i].fg = fg;
-    }
-}
-
 void Editor::move_cursor_right(size_t amount) {
     if (buffer.size() - 1 - cursor.idx <= amount) cursor.idx = buffer.size();
     else cursor.idx += amount;
@@ -146,63 +122,4 @@ void Editor::move_cursor_right(size_t amount) {
             cursor.row++;
         }
     }
-}
-
-void Editor::put_file_explorer() {
-    const char *dir = current_dir.c_str();
-    size_t len = strlen(dir);
-    for (size_t i = 0; i < len; i++) {
-        append_at_cursor(dir[i]);
-    }
-    append_at_cursor('/');
-    if (file_name.has_value()) {
-        for (char c : file_name.value()) append_at_cursor(c);
-    }
-}
-
-bool Editor::load(const char *file) {
-    current_dir = fs::absolute(fs::path(file)).parent_path();
-    file_name = file;
-
-    std::ifstream fin(file);
-    if (!fin.is_open()) {
-        TraceLog(LOG_ERROR, TextFormat("Can't open file %s", file));
-        return false;
-    }
-
-    char c;
-    while (!fin.eof() && (c = fin.get())) {
-        if (isprint(c) || isspace(c)) {
-            if (c == '\t') {
-                append_at_cursor(' ');
-                append_at_cursor(' ');
-                append_at_cursor(' ');
-                append_at_cursor(' ');
-            } else {
-                append_at_cursor(c);
-            }
-        }
-    }
-
-    fin.close();
-    return true;
-}
-
-bool Editor::save() {
-    if (file_name.has_value()) {
-        fs::path file_path = current_dir / file_name.value();
-        std::ofstream fout(file_path);
-        if (!fout.is_open()) {
-            TraceLog(LOG_ERROR, TextFormat("Can't open file %s", file_path.c_str()));
-            return false;
-        }
-
-        for (size_t i = 0; i < buffer.size(); i++) {
-            fout << buffer[i].c;
-        }
-
-        fout.close();
-        return true;
-    }
-    return false;
 }

@@ -5,7 +5,8 @@
 
 int main() {
     SetConfigFlags(FLAG_WINDOW_MINIMIZED);
-    InitWindow(1300, 900, "Txe");
+    int factor = 100;
+    InitWindow(16*factor, 9*factor, "Txe");
     const float FONT_SIZE = 30.0f;
     const char *FONT_PATH ="resources/fonts/iosevka-term-regular.ttf";
 
@@ -15,7 +16,6 @@ int main() {
 
     while (!WindowShouldClose()) {
         BeginDrawing();
-        BeginMode2D(renderer.camera);
 
         int c;
         while ((c = GetCharPressed())) { editor.append_at_cursor((char)c); }
@@ -28,23 +28,8 @@ int main() {
 
         ClearBackground(BLACK);
 
-        Vector2 pos = Vector2Zero();
-        const char *ptr = editor.buffer.data();
-        int n_line = (int)editor.line_size.size();
-        for (int i = 0; i < n_line; i++) {
-            string_view line(ptr, editor.line_size[i] - (i == n_line-1 ? 0 : 1));
-            renderer.draw_line(line, WHITE, pos);
-            if (i == editor.cursor.row) {
-                Vector2 size = renderer.measure_text(line.substr(0, editor.cursor.col));
-                Vector2 cursor_pos {.x = size.x, .y = pos.y};
-                renderer.draw_cursor(cursor_pos, WHITE);
-                renderer.bring_point_into_view(cursor_pos);
-            }
-            pos.y += renderer.font_height();
-            ptr += editor.line_size[i];
-        }
+        renderer.render(editor);
 
-        EndMode2D();
         EndDrawing();
     }
 

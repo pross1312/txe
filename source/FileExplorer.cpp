@@ -51,10 +51,10 @@ void FileExplorer::list_entries() {
     size_t idx = 0;
     for (const string &path : entries) {
         Color fg, bg;
-        if (fs::is_directory(path)) fg = SKYBLUE;
-        else fg = DEFAULT_FG;
-        if (idx == current_index) bg = GetColor(0x313131ff);
-        else bg = DEFAULT_BG;
+        if (fs::is_directory(path)) fg = DIR_COLOR;
+        else fg = FILE_COLOR;
+        if (idx == current_index) bg = ON_CURSOR_BG_COLOR;
+        else bg = N_ON_CURSOR_BG_COLOR;
         Editor::append_at_cursor(path, fg, bg);
         if (fs::is_directory(path)) append_at_cursor('/', fg, bg);
         append_at_cursor('\n');
@@ -106,9 +106,9 @@ void FileExplorer::change_dir(const fs::path &path) {
     cursor.idx = cursor.col = cursor.row = 0;
 
     const string &str = current_dir.string();
-    append_at_cursor(str);
-    if (str[str.size()-1] != '/') append_at_cursor('/');
-    append_at_cursor(file_name);
+    append_at_cursor(str, DIR_COLOR);
+    if (str[str.size()-1] != '/') append_at_cursor('/', DIR_COLOR);
+    append_at_cursor(file_name, FILE_COLOR);
     append_at_cursor('\n');
 
     list_entries();
@@ -126,7 +126,7 @@ void FileExplorer::set_current_idx(size_t idx) {
         set_cells_color(start, line_size[current_index+1], nullopt, nullopt);
         start = std::accumulate(line_size.begin(), line_size.begin()+idx+1, 0);
 
-        set_cells_color(start, line_size[idx+1], nullopt, GetColor(0x313131ff));
+        set_cells_color(start, line_size[idx+1], nullopt, ON_CURSOR_BG_COLOR);
         current_index = idx;
     }
 }

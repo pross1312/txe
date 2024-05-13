@@ -128,10 +128,15 @@ struct EditorRenderer {
         const float path_box_height = fs*2;
         DrawLineEx(Vector2{0.0f, path_box_height}, Vector2{(float)GetScreenWidth(), path_box_height}, line_thickness, WHITE);
         render_cursor = Vector2{.x = 0.0f, .y = (path_box_height - fs)*0.5f};
-        for (size_t i = 0; i < editor->line_size[0]; i++) {
+        size_t i = 0;
+        for (; i+1 < editor->line_size[0]; i++) { // avoid overflow
             put_char_attr(editor->buffer[i]);
         }
         put_cursor(WHITE);
+        render_cursor.y = path_box_height + line_thickness;
+        render_cursor.x = 0.0f;
+        i++;
+        while (i < editor->buffer.size()) put_char_attr(editor->buffer[i++]);
     }
 
     inline void render(const Editor *editor) {

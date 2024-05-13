@@ -1,4 +1,6 @@
 #include "TextEditor.h"
+#include "Helper.h"
+
 #include <numeric>
 #include <fstream>
 using namespace std;
@@ -13,33 +15,10 @@ TextEditor::TextEditor(const char *file): TextEditor() {
     }
 }
 
-// void TextEditor::switch_mode(Mode m) {
-//     mode = m;
-//     buffer.clear();
-//     line_size.clear();
-//     line_size.push_back(0);
-//     cursor.idx = cursor.col = cursor.row = 0;
-//     switch (mode) {
-//     case Mode::Text:
-//         if (file_name.has_value()) load((current_dir / file_name.value()).c_str());
-//         break;
-//     case Mode::File:
-//         put_file_explorer();
-//         break;
-//     }
-// }
-
-// void TextEditor::put_file_explorer() {
-//     const char *dir = current_dir.c_str();
-//     size_t len = strlen(dir);
-//     for (size_t i = 0; i < len; i++) {
-//         append_at_cursor(dir[i]);
-//     }
-//     append_at_cursor('/');
-//     if (file_name.has_value()) {
-//         for (char c : file_name.value()) append_at_cursor(c);
-//     }
-// }
+void TextEditor::handle_events() {
+    Editor::handle_events();
+    if (is_ctrl_key(KEY_S)) save();
+}
 
 bool TextEditor::load(const char *file) {
     current_file = fs::absolute(fs::path(file));

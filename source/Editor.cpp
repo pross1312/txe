@@ -1,11 +1,34 @@
 #include "Editor.h"
+#include "Helper.h"
 #include <numeric>
 using namespace std;
+
 
 void Editor::add_new_line(size_t size) {
     cursor.col = 0;
     cursor.row++;
     line_size.insert(line_size.begin() + cursor.row, size);
+}
+
+void Editor::handle_events() {
+    int c;
+    while ((c = GetCharPressed())) append_at_cursor((char)c);
+    if (is_key_hold(KEY_BACKSPACE)) pop_at_cursor();
+    if (is_key_hold(KEY_ENTER))     append_at_cursor('\n');
+    if (is_key_hold(KEY_LEFT)  || is_ctrl_and_key_hold(KEY_B))     move_cursor_left(1);
+    if (is_key_hold(KEY_RIGHT) || is_ctrl_and_key_hold(KEY_F))     move_cursor_right(1);
+    if (is_key_hold(KEY_UP)    || is_ctrl_and_key_hold(KEY_P))     move_cursor_up(1);
+    if (is_key_hold(KEY_DOWN)  || is_ctrl_and_key_hold(KEY_N))     move_cursor_down(1);
+}
+
+void Editor::append_at_cursor(const char *str, size_t len, Color fg, std::optional<Color> bg) {
+    for (size_t i = 0; i < len; i++) {
+        append_at_cursor(str[i], fg, bg);
+    }
+}
+
+void Editor::append_at_cursor(string_view str, Color fg, std::optional<Color> bg) {
+    append_at_cursor(str.data(), str.size(), fg, bg);
 }
 
 void Editor::append_at_cursor(char c, Color fg, std::optional<Color> bg) {

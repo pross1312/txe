@@ -1,16 +1,12 @@
 #pragma once
+#include "Editor.h"
 
 #include <filesystem>
 #include <list>
-#include "Editor.h"
 
 namespace fs = std::filesystem;
 
 struct FileExplorer: public Editor {
-    const Color DIR_COLOR = SKYBLUE;
-    const Color FILE_COLOR = WHITE;
-    const Color ON_CURSOR_BG_COLOR = GetColor(0x313131ff);
-    const Color N_ON_CURSOR_BG_COLOR = DEFAULT_BG;
     size_t current_index = 0;
     fs::path current_dir;
     std::string file_name;
@@ -33,4 +29,6 @@ struct FileExplorer: public Editor {
     void move_cursor_down(size_t amount) override;
     void move_cursor_left(size_t amount) override;
     void move_cursor_right(size_t amount) override;
+
+    void render() override;
 };

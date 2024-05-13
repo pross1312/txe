@@ -1,9 +1,9 @@
 #pragma once
+#include "Editor.h"
 
 #include <filesystem>
 #include <optional>
 
-#include "Editor.h"
 namespace fs = std::filesystem;
 
 struct TextEditor: public Editor {
@@ -16,4 +16,6 @@ struct TextEditor: public Editor {
     bool save();
 
     int handle_events() override;
+    
+    void render() override;
 };

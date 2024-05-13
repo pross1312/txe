@@ -147,3 +147,47 @@ void Editor::move_cursor_right(size_t amount) {
         }
     }
 }
+
+void Editor::put_cell(Cell cell, Vector2 &position) {
+    static char BUF[2] {};
+    if (cell.c == '\n') {
+        position.y += cfg.line_height;
+        position.x = 0.0f;
+    } else {
+        BUF[0] = cell.c; BUF[1] = 0;
+        int char_width = MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x;
+        if (cell.bg.has_value()) {
+            DrawRectangle(position.x, position.y, char_width, cfg.font_size, cell.bg.value());
+        }
+#ifdef USE_SDF_FONT
+        BeginShaderMode(cfg.font_shader);
+            DrawTextEx(cfg.font, BUF, position, cfg.font_size, cfg.spacing, cell.fg);
+        EndShaderMode();
+#else
+        DrawTextEx(cfg.font, BUF, position, cfg.font_size, cfg.spacing, cell.fg);
+#endif //USE_SDF_FONT
+        position.x += char_width;
+    }
+}
+
+void Editor::put_cursor(Vector2 position) {
+    DrawRectangle(position.x, position.y, cfg.cursor_width, cfg.line_height, cfg.cursor_color);
+}
+
+Vector2 Editor::get_cursor_pos() {
+    static char BUF[2] {};
+    Vector2 result { 0.0f, (float)cfg.line_height * cursor.row };
+    for (size_t i = cursor.idx - cursor.col; i < cursor.idx; i++) {
+        BUF[0] = buffer[i].c;
+        result.x += MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x;
+    }
+    return result;
+}
+
+void Editor::bring_point_into_view(Vector2 point) {
+    Vector2 screen {.x = (float)GetScreenWidth(), .y = (float)GetScreenHeight()};
+    if (point.x > camera.target.x + screen.x - PADDING_BOTTOM_RIGHT.x) camera.target.x += point.x - (camera.target.x + screen.x) + PADDING_BOTTOM_RIGHT.x;
+    else if (point.x < camera.target.x) camera.target.x -= camera.target.x - point.x + PADDING_TOP_LEFT.x;
+    if (point.y + cfg.line_height > camera.target.y + screen.y - PADDING_BOTTOM_RIGHT.y) camera.target.y += point.y + cfg.line_height - (camera.target.y + screen.y) + PADDING_BOTTOM_RIGHT.y;
+    else if (point.y < camera.target.y) camera.target.y -= camera.target.y - point.y + PADDING_TOP_LEFT.y;
+}

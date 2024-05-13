@@ -77,3 +77,20 @@ bool TextEditor::save() {
     }
     return false;
 }
+
+void TextEditor::render() {
+    Vector2 render_cursor = get_cursor_pos();
+    put_cursor(render_cursor);
+    bring_point_into_view(render_cursor);
+
+    render_cursor = Vector2Zero();
+    size_t i = 0, line = 0;
+    while (line < line_size.size() && render_cursor.y + cfg.line_height < camera.target.y) {
+        i += line_size[line++];
+        render_cursor.y += cfg.line_height;
+    }
+    while (i < buffer.size() && render_cursor.y < camera.target.y + GetScreenHeight()) {
+        Cell cell = buffer[i++];
+        put_cell(cell, render_cursor);
+    }
+}

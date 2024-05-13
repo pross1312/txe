@@ -1,26 +1,68 @@
-#include <stdio.h>
-#include <string.h>
 #include "TextEditor.h"
 #include "Helper.h"
 #include "FileExplorer.h"
-#include "EditorRenderer.hpp"
+
+#include <stdio.h>
+#include <string.h>
+
+Config _cfg;
+
+inline constexpr int FONT_SIZE = 30;
+inline constexpr const char *FONT_PATH = "resources/fonts/iosevka-term-regular.ttf";
+inline constexpr const char *FONT_SHADER_PATH = "./resources/shaders/sdf.fs";
+
+void init_config() {
+    _cfg.spacing = 0.0f;
+    _cfg.cursor_width = 2;
+
+    _cfg.cursor_color = WHITE;
+    _cfg.dir_color = SKYBLUE;
+    _cfg.file_color = WHITE;
+    _cfg.on_cursor_bg_color = GetColor(0x313131ff);
+    _cfg.n_on_cursor_bg_color = DEFAULT_BG;
+
+    _cfg.font_size = FONT_SIZE;
+    _cfg.line_height = FONT_SIZE;
+#ifdef USE_SDF_FONT
+    int file_size = 0;
+    unsigned char *file_data = LoadFileData(FONT_PATH, &file_size);
+    _cfg.font.baseSize = _cfg.font_size;
+    _cfg.font.glyphCount = 95;
+    _cfg.font.glyphs = LoadFontData(file_data, file_size, _cfg.font_size, NULL, 0, FONT_SDF);
+    Image atlas = GenImageFontAtlas(_cfg.font.glyphs, &_cfg.font.recs, 95, _cfg.font_size, 0, 1);
+    _cfg.font.texture = LoadTextureFromImage(atlas);
+    UnloadImage(atlas);
+    UnloadFileData(file_data);
+    _cfg.font_shader = LoadShader(0, FONT_SHADER_PATH);
+    SetTextureFilter(_cfg.font.texture, TEXTURE_FILTER_BILINEAR);    // Required for SDF font
+#else
+    _cfg.font = LoadFont(FONT_PATH);
+#endif // USE_SDF_FONT
+    SetTextLineSpacing(_cfg.line_height);
+}
+
+void destroy_config() {
+    UnloadFont(_cfg.font);
+#ifdef USE_SDF_FONT
+    UnloadShader(_cfg.font_shader);
+#endif // USE_SDF_FONT
+}
 
 int main(int argc, const char **argv) {
-    SetConfigFlags(FLAG_WINDOW_MINIMIZED);
-    int factor = 100;
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
+    int factor = 110;
     InitWindow(16*factor, 9*factor, "Txe");
-    const float FONT_SIZE = 30.0f;
-    const char *FONT_PATH ="resources/fonts/iosevka-term-regular.ttf";
 
     SetTargetFPS(60);
+
+    init_config();
+
     Editor *editor = new TextEditor("README.md");
     if (argc > 1) {
         if (editor->type == Mode::Text && !static_cast<TextEditor*>(editor)->load(argv[1])) {
             abort();
         }
     }
-    EditorRenderer renderer(FONT_PATH, FONT_SIZE);
-
     while (!WindowShouldClose()) {
         BeginDrawing();
 
@@ -47,12 +89,14 @@ int main(int argc, const char **argv) {
 
         ClearBackground(BLACK);
 
-        renderer.render(editor);
+        BeginMode2D(editor->camera);
+        editor->render();
+        EndMode2D();
 
         EndDrawing();
     }
 
-    renderer.unload();
+    destroy_config();
     CloseWindow();
     return 0;
 }

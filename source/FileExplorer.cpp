@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <cassert>
 #include <numeric>
-#include <algorithm>
 
 using namespace std;
 
@@ -51,10 +50,10 @@ void FileExplorer::list_entries() {
     size_t idx = 0;
     for (const string &path : entries) {
         Color fg, bg;
-        if (fs::is_directory(path)) fg = DIR_COLOR;
-        else fg = FILE_COLOR;
-        if (idx == current_index) bg = ON_CURSOR_BG_COLOR;
-        else bg = N_ON_CURSOR_BG_COLOR;
+        if (fs::is_directory(path)) fg = cfg.dir_color;
+        else fg = cfg.file_color;
+        if (idx == current_index) bg = cfg.on_cursor_bg_color;
+        else bg = cfg.n_on_cursor_bg_color;
         Editor::append_at_cursor(path, fg, bg);
         if (fs::is_directory(path)) append_at_cursor('/', fg, bg);
         append_at_cursor('\n');
@@ -106,9 +105,9 @@ void FileExplorer::change_dir(const fs::path &path) {
     cursor.idx = cursor.col = cursor.row = 0;
 
     const string &str = current_dir.string();
-    append_at_cursor(str, DIR_COLOR);
-    if (str[str.size()-1] != '/') append_at_cursor('/', DIR_COLOR);
-    append_at_cursor(file_name, FILE_COLOR);
+    append_at_cursor(str, cfg.dir_color);
+    if (str[str.size()-1] != '/') append_at_cursor('/', cfg.dir_color);
+    append_at_cursor(file_name, cfg.file_color);
     append_at_cursor('\n');
 
     list_entries();
@@ -126,7 +125,7 @@ void FileExplorer::set_current_idx(size_t idx) {
         set_cells_color(start, line_size[current_index+1], nullopt, nullopt);
         start = std::accumulate(line_size.begin(), line_size.begin()+idx+1, 0);
 
-        set_cells_color(start, line_size[idx+1], nullopt, ON_CURSOR_BG_COLOR);
+        set_cells_color(start, line_size[idx+1], nullopt, cfg.on_cursor_bg_color);
         current_index = idx;
     }
 }
@@ -147,4 +146,21 @@ void FileExplorer::move_cursor_left(size_t amount) {
 
 void FileExplorer::move_cursor_right(size_t amount) {
     (void)amount;
+}
+
+void FileExplorer::render() {
+    const float line_thickness = 2.0f;
+    const float path_box_height = cfg.line_height*2;
+    DrawLineEx(Vector2{0.0f, path_box_height}, Vector2{(float)GetScreenWidth(), path_box_height}, line_thickness, WHITE);
+    Vector2 render_cursor {.x = 0.0f, .y = (path_box_height - cfg.line_height)*0.5f};
+    size_t i = 0;
+    for (; i+1 < line_size[0]; i++) { // avoid overflow
+        put_cell(buffer[i], render_cursor);
+    }
+    put_cursor(render_cursor);
+    bring_point_into_view(render_cursor);
+    render_cursor.y = path_box_height + line_thickness;
+    render_cursor.x = 0.0f;
+    i++;
+    while (i < buffer.size()) put_cell(buffer[i++], render_cursor);
 }

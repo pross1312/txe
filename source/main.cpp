@@ -24,7 +24,26 @@ int main(int argc, const char **argv) {
     while (!WindowShouldClose()) {
         BeginDrawing();
 
-        editor->handle_events();
+        if (editor->handle_events() == 1) {
+            switch (editor->type) {
+            case Mode::Text: {
+                TextEditor *tx = static_cast<TextEditor*>(editor);
+                if (tx->current_file.has_value()) {
+                    fs::path current_file = tx->current_file.value();
+                    delete editor;
+                    editor = new FileExplorer(current_file);
+                } else {
+                    delete editor;
+                    editor = new FileExplorer();
+                }
+            } break;
+            case Mode::File: {
+                fs::path file = static_cast<FileExplorer*>(editor)->get_file();
+                delete editor;
+                editor = new TextEditor(file.c_str());
+            } break;
+            }
+        }
 
         ClearBackground(BLACK);
 

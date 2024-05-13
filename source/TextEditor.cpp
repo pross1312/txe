@@ -15,9 +15,21 @@ TextEditor::TextEditor(const char *file): TextEditor() {
     }
 }
 
-void TextEditor::handle_events() {
+int TextEditor::handle_events() {
     Editor::handle_events();
     if (is_ctrl_key(KEY_S)) save();
+    if (IsKeyDown(KEY_LEFT_ALT) && IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_H)) {
+        cursor.idx = 0;
+        cursor.row = 0;
+        cursor.col = 0;
+    }
+    if (IsKeyDown(KEY_LEFT_ALT) && IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_L)) {
+        cursor.idx = buffer.size();
+        cursor.row = line_size.size()-1;
+        cursor.col = line_size[cursor.row];
+    }
+    if (is_ctrl_key(KEY_P)) return 1;
+    return 0;
 }
 
 bool TextEditor::load(const char *file) {

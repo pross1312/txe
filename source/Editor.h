@@ -26,15 +26,16 @@ public:
     std::vector<size_t> line_size;
 
     Editor(Mode type): type(type), cursor(), buffer(), line_size(1ull, 0ull) {}
+    virtual ~Editor() = default;
 
     virtual void add_new_line(size_t size);
 
-    virtual void handle_events();
+    virtual int handle_events();
 
     virtual void append_at_cursor(char c, Color fg = DEFAULT_FG, std::optional<Color> bg = std::nullopt);
     virtual void append_at_cursor(std::string_view str, Color fg = DEFAULT_FG, std::optional<Color> bg = std::nullopt);
     virtual void append_at_cursor(const char *str, size_t len, Color fg = DEFAULT_FG, std::optional<Color> bg = std::nullopt);
-    virtual void set_cells_color(size_t start, size_t len, Color fg = DEFAULT_FG, std::optional<Color> bg = std::nullopt);
+    virtual void set_cells_color(size_t start, size_t len, std::optional<Color> fg = std::nullopt, std::optional<Color> bg = std::nullopt);
     virtual void pop_at_cursor();
 
     virtual void move_cursor_up(size_t amount);

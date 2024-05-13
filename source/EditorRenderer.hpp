@@ -108,19 +108,30 @@ struct EditorRenderer {
     }
 
     inline void render_text(const Editor *editor) {
+        render_cursor = get_cursor_pos(editor);
+        put_cursor(WHITE);
+        bring_point_into_view(render_cursor);
+
         render_cursor = Vector2Zero();
-        if (editor->cursor.idx == 0) {
-            put_cursor(WHITE);
-            bring_point_into_view(render_cursor);
+        size_t i = 0, line = 0;
+        while (line < editor->line_size.size() && render_cursor.y + fs < camera.target.y) {
+            i += editor->line_size[line++];
+            render_cursor.y += fs;
         }
-        for (size_t i = 0; i < editor->buffer.size(); i++) {
-            Cell cell = editor->buffer[i];
+        while (i < editor->buffer.size() && render_cursor.y < camera.target.y + GetScreenHeight()) {
+            Cell cell = editor->buffer[i++];
             put_char_attr(cell);
-            if (i+1 == editor->cursor.idx) {
-                put_cursor(WHITE);
-                bring_point_into_view(render_cursor);
-            }
         }
+    }
+
+    inline Vector2 get_cursor_pos(const Editor *editor) {
+        static char BUF[2] {};
+        Vector2 result { 0.0f, fs * editor->cursor.row };
+        for (size_t i = editor->cursor.idx - editor->cursor.col; i < editor->cursor.idx; i++) {
+            BUF[0] = editor->buffer[i].c;
+            result.x += MeasureTextEx(font, BUF, fs, SPACING).x;
+        }
+        return result;
     }
 
     inline void render_file_explorer(const Editor *editor) {
@@ -133,6 +144,7 @@ struct EditorRenderer {
             put_char_attr(editor->buffer[i]);
         }
         put_cursor(WHITE);
+        bring_point_into_view(render_cursor);
         render_cursor.y = path_box_height + line_thickness;
         render_cursor.x = 0.0f;
         i++;

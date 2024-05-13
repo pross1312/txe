@@ -15,5 +15,5 @@ struct TextEditor: public Editor {
     bool load(const char *file);
     bool save();
 
-    void handle_events() override;
+    int handle_events() override;
 };

@@ -5,8 +5,14 @@
 inline bool is_ctrl_key(KeyboardKey key_code) {
     return (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && IsKeyPressed(key_code);
 }
+inline bool is_alt_key(KeyboardKey key_code) {
+    return (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(key_code);
+}
 inline bool is_key_hold(KeyboardKey key_code) {
     return IsKeyPressed(key_code) || IsKeyPressedRepeat(key_code);
+}
+inline bool is_alt_and_key_hold(KeyboardKey key_code) {
+    return (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && (IsKeyPressed(key_code) || IsKeyPressedRepeat(key_code));
 }
 inline bool is_ctrl_and_key_hold(KeyboardKey key_code) {
     return (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && (IsKeyPressed(key_code) || IsKeyPressedRepeat(key_code));

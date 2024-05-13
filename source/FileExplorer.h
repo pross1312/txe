@@ -15,13 +15,15 @@ struct FileExplorer: public Editor {
     FileExplorer();
     FileExplorer(fs::path current_file);
 
+    inline fs::path get_file() { return current_dir / file_name; }
+
     void set_current_idx(size_t idx);
-    void sort_and_insert_entries();
+    void list_entries();
 
     void change_dir(const fs::path &path);
     void open_file(const fs::path &path);
 
-    void handle_events() override;
+    int handle_events() override;
 
     void move_cursor_up(size_t amount) override;
     void move_cursor_down(size_t amount) override;

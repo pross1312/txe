@@ -10,15 +10,16 @@ void Editor::add_new_line(size_t size) {
     line_size.insert(line_size.begin() + cursor.row, size);
 }
 
-void Editor::handle_events() {
+int Editor::handle_events() {
     int c;
     while ((c = GetCharPressed())) append_at_cursor((char)c);
     if (is_key_hold(KEY_BACKSPACE)) pop_at_cursor();
     if (is_key_hold(KEY_ENTER))     append_at_cursor('\n');
-    if (is_key_hold(KEY_LEFT)  || is_ctrl_and_key_hold(KEY_B))     move_cursor_left(1);
-    if (is_key_hold(KEY_RIGHT) || is_ctrl_and_key_hold(KEY_F))     move_cursor_right(1);
-    if (is_key_hold(KEY_UP)    || is_ctrl_and_key_hold(KEY_P))     move_cursor_up(1);
-    if (is_key_hold(KEY_DOWN)  || is_ctrl_and_key_hold(KEY_N))     move_cursor_down(1);
+    if (is_key_hold(KEY_LEFT)  || is_alt_and_key_hold(KEY_H))     move_cursor_left(1);
+    if (is_key_hold(KEY_RIGHT) || is_alt_and_key_hold(KEY_L))     move_cursor_right(1);
+    if (is_key_hold(KEY_UP)    || is_alt_and_key_hold(KEY_K))     move_cursor_up(1);
+    if (is_key_hold(KEY_DOWN)  || is_alt_and_key_hold(KEY_J))     move_cursor_down(1);
+    return 0;
 }
 
 void Editor::append_at_cursor(const char *str, size_t len, Color fg, std::optional<Color> bg) {
@@ -59,11 +60,11 @@ void Editor::pop_at_cursor() {
     line_size[cursor.row]--;
 }
 
-void Editor::set_cells_color(size_t start, size_t len, Color fg, optional<Color> bg) {
+void Editor::set_cells_color(size_t start, size_t len, optional<Color> fg, optional<Color> bg) {
     size_t length = std::min(start + len, buffer.size());
     for (size_t i = start; i < length; i++) {
+        if (fg.has_value()) buffer[i].fg = fg.value();
         buffer[i].bg = bg;
-        buffer[i].fg = fg;
     }
 }
 

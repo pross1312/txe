@@ -6,3 +6,8 @@ An attempt to make a text editor with [raylib](https://www.raylib.com/) in C++
 $ make
 $ ./txe
 ```
+
+## TODO
+- [x] Get rid of camera
+- [ ] Draw line number
+- [ ] Allow input file name when save to new file

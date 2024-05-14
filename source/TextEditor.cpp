@@ -85,11 +85,11 @@ void TextEditor::render() {
 
     render_cursor = Vector2Zero();
     size_t i = 0, line = 0;
-    while (line < line_size.size() && render_cursor.y + cfg.line_height < camera.target.y) {
+    while (line < line_size.size() && render_cursor.y + cfg.line_height < view.y) {
         i += line_size[line++];
         render_cursor.y += cfg.line_height;
     }
-    while (i < buffer.size() && render_cursor.y < camera.target.y + GetScreenHeight()) {
+    while (i < buffer.size() && render_cursor.y < view.y + GetScreenHeight()) {
         Cell cell = buffer[i++];
         put_cell(cell, render_cursor);
     }

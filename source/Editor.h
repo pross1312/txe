@@ -27,7 +27,7 @@ public:
 
     const Vector2 PADDING_BOTTOM_RIGHT { .x = 50.0f, .y = 10.0f };
     const Vector2 PADDING_TOP_LEFT     { .x = 10.0f, .y = 5.0f };
-    Camera2D camera;
+    Rectangle view;
 
     const Config &cfg = _cfg;
     std::vector<Cell> &buffer = _buffer;
@@ -35,13 +35,13 @@ public:
 
     Editor(Mode type): type(type), cursor()  {
         buffer.clear();
-        line_size.resize(2);
-        line_size[1] = 0;
+        line_size.resize(1);
+        line_size[0] = 0;
 
-        camera.target = Vector2Zero();
-        camera.offset = Vector2Zero();
-        camera.rotation = 0.0f;
-        camera.zoom = 1.0f;
+        view.x = 0.0f;
+        view.y = 0.0f;
+        view.width = GetScreenWidth();
+        view.height = GetScreenHeight();
     }
 
     virtual ~Editor() = default;
@@ -69,4 +69,11 @@ public:
     virtual void put_cursor(Vector2 position);
 
     virtual Vector2 get_cursor_pos();
+
+    Vector2 world_to_view(Vector2 pos) {
+        return Vector2{ .x = pos.x - view.x, .y = pos.y - view.y };
+    }
+    bool is_rect_in_view(float x, float y, float w, float h) {
+        return !(x + w <= view.x || y + h <= view.y || x >= view.x + view.width || y >= view.y + view.height);
+    }
 };

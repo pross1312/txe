@@ -12,7 +12,11 @@ uniform vec4 colDiffuse;
 out vec4 finalColor;
 
 // NOTE: Add here your custom variables
+uniform float time;
 
+float map01(float x) {
+    return (x + 1.0f) / 2.0f;
+}
 void main()
 {
     // Texel color fetching from texture sampler
@@ -23,4 +27,8 @@ void main()
 
     // Calculate final fragment color
     finalColor = vec4(fragColor.rgb, fragColor.a*alpha);
+    // finalColor = vec4(map01(sin(time + fragTexCoord.x * 1.5)),
+    //                   map01(cos(time + fragTexCoord.y * 1.5)),
+    //                   map01(sin(time + fragTexCoord.x * fragTexCoord.y * 1.5) * cos(time * fragTexCoord.x * fragTexCoord.y * 1.5)),
+    //                   alpha) * fragColor;
 }

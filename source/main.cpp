@@ -64,6 +64,11 @@ int main(int argc, const char **argv) {
         }
     }
     while (!WindowShouldClose()) {
+        // float time = (float)GetTime();
+        // BeginShaderMode(_cfg.font_shader);
+        // int time_loc = GetShaderLocation(_cfg.font_shader, "time");
+        // SetShaderValue(_cfg.font_shader, time_loc, &time, SHADER_UNIFORM_FLOAT);
+        // EndShaderMode();
         BeginDrawing();
 
         if (editor->handle_events() == 1) {
@@ -89,9 +94,7 @@ int main(int argc, const char **argv) {
 
         ClearBackground(BLACK);
 
-        BeginMode2D(editor->camera);
         editor->render();
-        EndMode2D();
 
         EndDrawing();
     }

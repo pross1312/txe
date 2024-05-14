@@ -90,7 +90,7 @@ void Editor::move_cursor_up(size_t amount) {
         cursor.col = 0;
     } else {
         cursor.row -= amount;
-        if (cursor.col > line_size[cursor.row]-1) {
+        if (cursor.col + 1 > line_size[cursor.row]) {
             cursor.col = line_size[cursor.row]-1;
         }
         cursor.idx = std::accumulate(line_size.begin(), line_size.begin() + cursor.row, 0) + cursor.col;
@@ -131,10 +131,10 @@ void Editor::move_cursor_left(size_t amount) {
 }
 
 void Editor::move_cursor_right(size_t amount) {
-    if (buffer.size() - 1 - cursor.idx <= amount) cursor.idx = buffer.size();
+    if (buffer.size() - cursor.idx <= amount) cursor.idx = buffer.size();
     else cursor.idx += amount;
     while (amount > 0) {
-        if (line_size[cursor.row] - 1 - cursor.col >=  amount) { // skip \n
+        if (line_size[cursor.row] - cursor.col >= amount + 1) { // skip \n
             cursor.col += amount;
             break;
         } else if (cursor.row == line_size.size()-1) {
@@ -154,23 +154,28 @@ void Editor::put_cell(Cell cell, Vector2 &position) {
         position.y += cfg.line_height;
         position.x = 0.0f;
     } else {
+        Vector2 pos = world_to_view(position);
         BUF[0] = cell.c; BUF[1] = 0;
         int char_width = MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x;
-        if (cell.bg.has_value()) {
-            DrawRectangle(position.x, position.y, char_width, cfg.font_size, cell.bg.value());
-        }
+
+        if (is_rect_in_view(position.x, position.y, char_width, cfg.line_height)) {
+            if (cell.bg.has_value()) {
+                DrawRectangle(pos.x, pos.y, char_width, cfg.font_size, cell.bg.value());
+            }
 #ifdef USE_SDF_FONT
-        BeginShaderMode(cfg.font_shader);
-            DrawTextEx(cfg.font, BUF, position, cfg.font_size, cfg.spacing, cell.fg);
-        EndShaderMode();
+            BeginShaderMode(cfg.font_shader);
+                DrawTextEx(cfg.font, BUF, pos, cfg.font_size, cfg.spacing, cell.fg);
+            EndShaderMode();
 #else
-        DrawTextEx(cfg.font, BUF, position, cfg.font_size, cfg.spacing, cell.fg);
+            DrawTextEx(cfg.font, BUF, pos, cfg.font_size, cfg.spacing, cell.fg);
 #endif //USE_SDF_FONT
+        }
         position.x += char_width;
     }
 }
 
 void Editor::put_cursor(Vector2 position) {
+    position = world_to_view(position);
     DrawRectangle(position.x, position.y, cfg.cursor_width, cfg.line_height, cfg.cursor_color);
 }
 
@@ -185,9 +190,9 @@ Vector2 Editor::get_cursor_pos() {
 }
 
 void Editor::bring_point_into_view(Vector2 point) {
-    Vector2 screen {.x = (float)GetScreenWidth(), .y = (float)GetScreenHeight()};
-    if (point.x > camera.target.x + screen.x - PADDING_BOTTOM_RIGHT.x) camera.target.x += point.x - (camera.target.x + screen.x) + PADDING_BOTTOM_RIGHT.x;
-    else if (point.x < camera.target.x) camera.target.x -= camera.target.x - point.x + PADDING_TOP_LEFT.x;
-    if (point.y + cfg.line_height > camera.target.y + screen.y - PADDING_BOTTOM_RIGHT.y) camera.target.y += point.y + cfg.line_height - (camera.target.y + screen.y) + PADDING_BOTTOM_RIGHT.y;
-    else if (point.y < camera.target.y) camera.target.y -= camera.target.y - point.y + PADDING_TOP_LEFT.y;
+    if (point.x > view.x + view.width - PADDING_BOTTOM_RIGHT.x) view.x += point.x - (view.x + view.width) + PADDING_BOTTOM_RIGHT.x;
+    else if (point.x < view.x) view.x -= view.x - point.x + PADDING_TOP_LEFT.x;
+
+    if (point.y + cfg.line_height > view.y + view.height - PADDING_BOTTOM_RIGHT.y) view.y += point.y + cfg.line_height - (view.y + view.height) + PADDING_BOTTOM_RIGHT.y;
+    else if (point.y < view.y) view.y -= view.y - point.y + PADDING_TOP_LEFT.y;
 }

@@ -2,6 +2,9 @@
 #include <raylib.h>
 #include <string>
 
+inline bool is_rect_in_rect(Rectangle rect, Rectangle parent) {
+    return !(rect.x + rect.width < parent.x || rect.y + rect.height < parent.y || rect.x > parent.x + parent.width || rect.y > parent.y + parent.height);
+}
 inline bool is_ctrl_key(KeyboardKey key_code) {
     return (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && IsKeyPressed(key_code);
 }

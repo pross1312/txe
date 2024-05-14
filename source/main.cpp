@@ -50,9 +50,10 @@ void destroy_config() {
 }
 
 int main(int argc, const char **argv) {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
+    SetConfigFlags(FLAG_WINDOW_MAXIMIZED);
     int factor = 110;
-    InitWindow(16*factor, 9*factor, "Txe");
+
+    InitWindow(0, 0, "Txe");
 
     SetTargetFPS(60);
 
@@ -93,7 +94,7 @@ int main(int argc, const char **argv) {
             }
         }
 
-        ClearBackground(BLACK);
+        ClearBackground(DEFAULT_BG);
 
         editor->render();
 

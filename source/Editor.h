@@ -18,6 +18,7 @@ enum Mode     { Text, File };
 
 inline std::vector<Cell> _buffer {};
 inline std::vector<size_t> _line_size(1ull, 0);
+inline std::vector<int> _chars_width(128ull, 0);
 extern Config _cfg;
 
 class Editor {
@@ -25,23 +26,18 @@ public:
     Mode type;
     Cursor cursor;
 
-    const Vector2 PADDING_BOTTOM_RIGHT { .x = 50.0f, .y = 10.0f };
-    const Vector2 PADDING_TOP_LEFT     { .x = 10.0f, .y = 5.0f };
-    Rectangle view;
-
     const Config &cfg = _cfg;
     std::vector<Cell> &buffer = _buffer;
     std::vector<size_t> &line_size = _line_size;
+
+    std::vector<int> &chars_width = _chars_width;
 
     Editor(Mode type): type(type), cursor()  {
         buffer.clear();
         line_size.resize(1);
         line_size[0] = 0;
 
-        view.x = 0.0f;
-        view.y = 0.0f;
-        view.width = GetScreenWidth();
-        view.height = GetScreenHeight();
+        update_chars_width();
     }
 
     virtual ~Editor() = default;
@@ -64,16 +60,18 @@ public:
 
     virtual void render() = 0;
 
-    virtual void bring_point_into_view(Vector2 point);
-    virtual void put_cell(Cell cell, Vector2 &position, size_t times = 1); // put cell and advance position
+    virtual void put_cell(Cell cell, Vector2 position, size_t times = 1); // put cell and advance position
     virtual void put_cursor(Vector2 position);
 
     virtual Vector2 get_cursor_pos();
 
-    Vector2 world_to_view(Vector2 pos) {
-        return Vector2{ .x = pos.x - view.x, .y = pos.y - view.y };
+    inline bool is_rect_in_view(float x, float y, float w, float h) {
+        return !(x + w <= 0.0f || y + h <= 0.0f || x >= 0.0f + GetScreenWidth() || y >= 0.0f + GetScreenHeight());
     }
-    bool is_rect_in_view(float x, float y, float w, float h) {
-        return !(x + w <= view.x || y + h <= view.y || x >= view.x + view.width || y >= view.y + view.height);
+    inline int get_w(char c) {
+        if (c == '\t') return chars_width[(int)' '] * cfg.tab_size;
+        return chars_width[(int)c];
     }
+
+    void update_chars_width();
 };

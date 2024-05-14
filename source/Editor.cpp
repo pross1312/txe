@@ -149,61 +149,50 @@ void Editor::move_cursor_right(size_t amount) {
     }
 }
 
-void Editor::put_cell(Cell cell, Vector2 &position, size_t times) {
+void Editor::put_cell(Cell cell, Vector2 position, size_t times) {
     static char BUF[2] {};
     if (cell.c == '\t') { // replace tab with space
         cell.c = ' ';
         put_cell(cell, position, (size_t)cfg.tab_size);
-    } else if (cell.c == '\n') {
-        position.y += cfg.line_height;
-        position.x = 0.0f;
     } else {
-        BUF[0] = cell.c; BUF[1] = 0;
-        int char_width = MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x;
+        BUF[0] = cell.c;
+        int ch_w = get_w(cell.c);
         for (size_t i = 0; i < times; i++) {
-            Vector2 pos = world_to_view(position);
+            if (is_rect_in_view(position.x, position.y, ch_w, cfg.line_height)) {
 
-            if (is_rect_in_view(position.x, position.y, char_width, cfg.line_height)) {
                 if (cell.bg.has_value()) {
-                    DrawRectangle(pos.x, pos.y, char_width, cfg.font_size, cell.bg.value());
+                    DrawRectangle(position.x, position.y, ch_w, cfg.font_size, cell.bg.value());
                 }
 #ifdef USE_SDF_FONT
                 BeginShaderMode(cfg.font_shader);
-                    DrawTextEx(cfg.font, BUF, pos, cfg.font_size, cfg.spacing, cell.fg);
+                    DrawTextEx(cfg.font, BUF, position, cfg.font_size, cfg.spacing, cell.fg);
                 EndShaderMode();
 #else
-                DrawTextEx(cfg.font, BUF, pos, cfg.font_size, cfg.spacing, cell.fg);
+                DrawTextEx(cfg.font, BUF, position, cfg.font_size, cfg.spacing, cell.fg);
 #endif //USE_SDF_FONT
             }
-            position.x += char_width;
+            position.x += ch_w;
         }
     }
 }
 
 void Editor::put_cursor(Vector2 position) {
-    position = world_to_view(position);
     DrawRectangle(position.x, position.y, cfg.cursor_width, cfg.line_height, cfg.cursor_color);
 }
 
 Vector2 Editor::get_cursor_pos() {
-    static char BUF[2] {};
     Vector2 result { 0.0f, (float)cfg.line_height * cursor.row };
     for (size_t i = cursor.idx - cursor.col; i < cursor.idx; i++) {
-        BUF[0] = buffer[i].c;
-        if (BUF[0] == '\t') {
-            BUF[0] = ' ';
-            result.x += MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x * cfg.tab_size;
-        } else {
-            result.x += MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x;
-        }
+        char ch = buffer[i].c;
+        result.x += get_w(ch);
     }
     return result;
 }
 
-void Editor::bring_point_into_view(Vector2 point) {
-    if (point.x > view.x + view.width - PADDING_BOTTOM_RIGHT.x) view.x += point.x - (view.x + view.width) + PADDING_BOTTOM_RIGHT.x;
-    else if (point.x < view.x) view.x -= view.x - point.x + PADDING_TOP_LEFT.x;
-
-    if (point.y + cfg.line_height > view.y + view.height - PADDING_BOTTOM_RIGHT.y) view.y += point.y + cfg.line_height - (view.y + view.height) + PADDING_BOTTOM_RIGHT.y;
-    else if (point.y < view.y) view.y -= view.y - point.y + PADDING_TOP_LEFT.y;
+void Editor::update_chars_width() {
+    char BUF[2] {};
+    for (int i = 32; i < 128; i++) {
+        BUF[0] = (char)i;
+        chars_width[i] = MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x;
+    }
 }

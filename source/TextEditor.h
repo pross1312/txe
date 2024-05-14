@@ -7,7 +7,13 @@
 namespace fs = std::filesystem;
 
 struct TextEditor: public Editor {
+    const Vector2 PADDING_BOTTOM_RIGHT { .x = 50.0f, .y = 10.0f };
+    const Vector2 PADDING_TOP_LEFT     { .x = 0.0f, .y = 0.0f };
+
     std::optional<fs::path> current_file;
+
+    Vector2 origin;
+    Rectangle text_view;
 
     TextEditor();
     TextEditor(const char *file);
@@ -16,6 +22,16 @@ struct TextEditor: public Editor {
     bool save();
 
     int handle_events() override;
-    
+
     void render() override;
+    void render_line_number(size_t start);
+
+    void move_text_view_to_point(Vector2 point);
+
+    inline Vector2 world_to_view(Vector2 point) {
+        return Vector2 {
+            .x = point.x + origin.x - text_view.x,
+            .y = point.y + origin.y - text_view.y,
+        };
+    }
 };

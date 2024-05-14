@@ -156,11 +156,21 @@ void FileExplorer::render() {
     size_t i = 0;
     for (; i+1 < line_size[0]; i++) { // avoid overflow
         put_cell(buffer[i], render_cursor);
+        render_cursor.x += get_w(buffer[i].c);
     }
     put_cursor(render_cursor);
-    bring_point_into_view(render_cursor);
+    // bring_point_into_view(render_cursor);
     render_cursor.y = path_box_height + line_thickness;
     render_cursor.x = 0.0f;
     i++;
-    while (i < buffer.size()) put_cell(buffer[i++], render_cursor);
+    while (i < buffer.size()) {
+        Cell cell = buffer[i++];
+        if (cell.c == '\n') {
+            render_cursor.y += cfg.line_height;
+            render_cursor.x = 0.0f;
+        } else {
+            put_cell(cell, render_cursor);
+            render_cursor.x += get_w(cell.c);
+        }
+    }
 }

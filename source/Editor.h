@@ -65,7 +65,7 @@ public:
     virtual void render() = 0;
 
     virtual void bring_point_into_view(Vector2 point);
-    virtual void put_cell(Cell cell, Vector2 &position); // put cell and advance position
+    virtual void put_cell(Cell cell, Vector2 &position, size_t times = 1); // put cell and advance position
     virtual void put_cursor(Vector2 position);
 
     virtual Vector2 get_cursor_pos();

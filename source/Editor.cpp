@@ -13,6 +13,7 @@ void Editor::add_new_line(size_t size) {
 int Editor::handle_events() {
     int c;
     while ((c = GetCharPressed())) append_at_cursor((char)c);
+    if (IsKeyPressed(KEY_TAB))     append_at_cursor('\t');
     if (is_key_hold(KEY_BACKSPACE)) pop_at_cursor();
     if (is_key_hold(KEY_ENTER))     append_at_cursor('\n');
     if (is_key_hold(KEY_LEFT)  || is_alt_and_key_hold(KEY_H))     move_cursor_left(1);
@@ -148,29 +149,34 @@ void Editor::move_cursor_right(size_t amount) {
     }
 }
 
-void Editor::put_cell(Cell cell, Vector2 &position) {
+void Editor::put_cell(Cell cell, Vector2 &position, size_t times) {
     static char BUF[2] {};
-    if (cell.c == '\n') {
+    if (cell.c == '\t') { // replace tab with space
+        cell.c = ' ';
+        put_cell(cell, position, (size_t)cfg.tab_size);
+    } else if (cell.c == '\n') {
         position.y += cfg.line_height;
         position.x = 0.0f;
     } else {
-        Vector2 pos = world_to_view(position);
         BUF[0] = cell.c; BUF[1] = 0;
         int char_width = MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x;
+        for (size_t i = 0; i < times; i++) {
+            Vector2 pos = world_to_view(position);
 
-        if (is_rect_in_view(position.x, position.y, char_width, cfg.line_height)) {
-            if (cell.bg.has_value()) {
-                DrawRectangle(pos.x, pos.y, char_width, cfg.font_size, cell.bg.value());
-            }
+            if (is_rect_in_view(position.x, position.y, char_width, cfg.line_height)) {
+                if (cell.bg.has_value()) {
+                    DrawRectangle(pos.x, pos.y, char_width, cfg.font_size, cell.bg.value());
+                }
 #ifdef USE_SDF_FONT
-            BeginShaderMode(cfg.font_shader);
-                DrawTextEx(cfg.font, BUF, pos, cfg.font_size, cfg.spacing, cell.fg);
-            EndShaderMode();
+                BeginShaderMode(cfg.font_shader);
+                    DrawTextEx(cfg.font, BUF, pos, cfg.font_size, cfg.spacing, cell.fg);
+                EndShaderMode();
 #else
-            DrawTextEx(cfg.font, BUF, pos, cfg.font_size, cfg.spacing, cell.fg);
+                DrawTextEx(cfg.font, BUF, pos, cfg.font_size, cfg.spacing, cell.fg);
 #endif //USE_SDF_FONT
+            }
+            position.x += char_width;
         }
-        position.x += char_width;
     }
 }
 
@@ -184,7 +190,12 @@ Vector2 Editor::get_cursor_pos() {
     Vector2 result { 0.0f, (float)cfg.line_height * cursor.row };
     for (size_t i = cursor.idx - cursor.col; i < cursor.idx; i++) {
         BUF[0] = buffer[i].c;
-        result.x += MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x;
+        if (BUF[0] == '\t') {
+            BUF[0] = ' ';
+            result.x += MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x * cfg.tab_size;
+        } else {
+            result.x += MeasureTextEx(cfg.font, BUF, cfg.font_size, cfg.spacing).x;
+        }
     }
     return result;
 }

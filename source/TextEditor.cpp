@@ -44,12 +44,7 @@ bool TextEditor::load(const char *file) {
     char c;
     while (!fin.eof() && (c = fin.get())) {
         if (isprint(c) || isspace(c)) {
-            if (c == '\t') {
-                append_at_cursor(' ');
-                append_at_cursor(' ');
-                append_at_cursor(' ');
-                append_at_cursor(' ');
-            } else {
+            if (c != '\r') {
                 append_at_cursor(c);
             }
         }

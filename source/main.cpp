@@ -12,6 +12,7 @@ inline constexpr const char *FONT_PATH = "resources/fonts/iosevka-term-regular.t
 inline constexpr const char *FONT_SHADER_PATH = "./resources/shaders/sdf.fs";
 
 void init_config() {
+    _cfg.tab_size = 4;
     _cfg.spacing = 0.0f;
     _cfg.cursor_width = 2;
 
@@ -57,11 +58,11 @@ int main(int argc, const char **argv) {
 
     init_config();
 
-    Editor *editor = new TextEditor("README.md");
+    Editor *editor = nullptr;
     if (argc > 1) {
-        if (editor->type == Mode::Text && !static_cast<TextEditor*>(editor)->load(argv[1])) {
-            abort();
-        }
+        editor = new TextEditor(argv[1]);
+    } else {
+        editor = new TextEditor;
     }
     while (!WindowShouldClose()) {
         // float time = (float)GetTime();

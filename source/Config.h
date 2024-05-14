@@ -21,6 +21,7 @@ struct Config {
 
     float spacing = 0.0f;
     int cursor_width = 2;
+    int tab_size = 4;
 };
 
 #endif // CONFIG_H

@@ -12,18 +12,6 @@ inline constexpr const char *FONT_PATH = "resources/fonts/iosevka-term-regular.t
 inline constexpr const char *FONT_SHADER_PATH = "./resources/shaders/sdf.fs";
 
 void init_config() {
-    _cfg.tab_size = 4;
-    _cfg.spacing = 0.0f;
-    _cfg.cursor_width = 2;
-
-    _cfg.cursor_color = WHITE;
-    _cfg.dir_color = SKYBLUE;
-    _cfg.file_color = WHITE;
-    _cfg.on_cursor_bg_color = GetColor(0x313131ff);
-    _cfg.n_on_cursor_bg_color = DEFAULT_BG;
-
-    _cfg.font_size = FONT_SIZE;
-    _cfg.line_height = FONT_SIZE;
 #ifdef USE_SDF_FONT
     int file_size = 0;
     unsigned char *file_data = LoadFileData(FONT_PATH, &file_size);
@@ -65,12 +53,16 @@ int main(int argc, const char **argv) {
         editor = new TextEditor;
     }
     while (!WindowShouldClose()) {
+        if (IsWindowResized()) {
+            editor->on_resize();
+        }
         // float time = (float)GetTime();
         // BeginShaderMode(_cfg.font_shader);
         // int time_loc = GetShaderLocation(_cfg.font_shader, "time");
         // SetShaderValue(_cfg.font_shader, time_loc, &time, SHADER_UNIFORM_FLOAT);
         // EndShaderMode();
         BeginDrawing();
+        ClearBackground(DEFAULT_BG);
 
         if (editor->handle_events() == 1) {
             switch (editor->type) {
@@ -93,7 +85,6 @@ int main(int argc, const char **argv) {
             }
         }
 
-        ClearBackground(DEFAULT_BG);
 
         editor->render();
 

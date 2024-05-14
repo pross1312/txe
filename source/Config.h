@@ -28,6 +28,7 @@ struct Config {
     int cursor_width = 2;
     int tab_size = 4;
     float line_number_width = 70.0f;
+    float msg_box_height = line_height + 5.0f;
 };
 
 #endif // CONFIG_H

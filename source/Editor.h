@@ -45,6 +45,7 @@ public:
     virtual void add_new_line(size_t size);
 
     virtual int handle_events();
+    virtual void on_resize() {}
 
     virtual void append_at_cursor(char c, Color fg = DEFAULT_FG, std::optional<Color> bg = std::nullopt);
     virtual void append_at_cursor(std::string_view str, Color fg = DEFAULT_FG, std::optional<Color> bg = std::nullopt);

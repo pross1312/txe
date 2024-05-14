@@ -9,19 +9,26 @@ using namespace std;
 constexpr float SEPERATE_PADDING = 10.0f;
 
 TextEditor::TextEditor(): Editor(Mode::Text) {
+    SetWindowTitle("Txe");
     current_file = nullopt;
-    origin.x = cfg.line_number_width + 2*SEPERATE_PADDING;
-    origin.y = 0.0f;
-    text_view.x = 0.0f;
-    text_view.y = 0.0f;
-    text_view.width = GetScreenWidth() - origin.x;
-    text_view.height = GetScreenHeight();
+    on_resize();
 }
 TextEditor::TextEditor(const char *file): TextEditor() {
-    current_file = fs::absolute(fs::path(file));
     if (!load(file)) {
         abort();
     }
+    current_file = fs::absolute(fs::path(file));
+    SetWindowTitle(TextFormat("%s - Txe", file));
+}
+
+void TextEditor::on_resize() {
+    origin.x = cfg.line_number_width + 2*SEPERATE_PADDING;
+    origin.y = 0.0f;
+
+    text_view.x = 0.0f;
+    text_view.y = 0.0f;
+    text_view.width = GetScreenWidth() - origin.x;
+    text_view.height = GetScreenHeight() - cfg.msg_box_height;
 }
 
 size_t TextEditor::get_idx_prev_word() {
@@ -48,11 +55,22 @@ int TextEditor::handle_events() {
     static bool is_ctrl_x = false;
     Editor::handle_events();
 
-    if (is_ctrl_key(KEY_G)) is_ctrl_x = false;
+    if (is_ctrl_key(KEY_G)) {
+        is_ctrl_x = false;
+        msg = "CTRL-G";
+    }
     if (is_ctrl_x) {
         if (is_ctrl_key(KEY_S)) {
             is_ctrl_x = false;
-            save();
+            if (current_file.has_value()) {
+                if (save()) {
+                    msg = "Saved";
+                } else {
+                    msg = TextFormat("Can't save to file %s", current_file.value().c_str());
+                }
+            } else {
+                msg = "No file path";
+            }
         } else if (is_ctrl_key(KEY_F)) {
             is_ctrl_x = false;
             return 1;
@@ -67,7 +85,10 @@ int TextEditor::handle_events() {
     else if (is_alt_and_key_hold(KEY_B) && cursor.idx > 0) {
         move_cursor_left(cursor.idx - get_idx_prev_word());
     }
-    else if (is_ctrl_key(KEY_X)) is_ctrl_x = true;
+    else if (is_ctrl_key(KEY_X)) {
+        is_ctrl_x = true;
+        msg = "CTRL-X ..";
+    }
     else if (is_ctrl_key(KEY_A)) {
         cursor.idx -= cursor.col;
         cursor.col = 0;
@@ -140,6 +161,20 @@ void TextEditor::move_text_view_to_point(Vector2 point) {
     else if (point.y < text_view.y) text_view.y -= text_view.y - point.y + PADDING_TOP_LEFT.y;
 }
 
+void TextEditor::render_msg() {
+    Vector2 pos {.x = 0.0f, .y = (float)GetScreenHeight() - (cfg.line_height + cfg.msg_box_height)*0.5f};
+    DrawRectangle(0.0f, (float)GetScreenHeight() - cfg.msg_box_height, (float)GetScreenWidth(), cfg.msg_box_height, DEFAULT_BG);
+    for (char ch : msg) {
+        Cell cell {
+            .c = ch,
+            .fg = DEFAULT_FG,
+            .bg = nullopt
+        };
+        put_cell(cell, pos);
+        pos.x += get_w(ch);
+    }
+}
+
 void TextEditor::render() {
 
     Vector2 render_cursor = get_cursor_pos();
@@ -168,13 +203,13 @@ void TextEditor::render() {
         }
     }
     render_line_number(line);
+    render_msg();
 }
 
 void TextEditor::render_line_number(size_t start) {
-    float screen_height = GetScreenHeight();
-    DrawRectangle(0.0f, 0.0f, cfg.line_number_width + SEPERATE_PADDING, screen_height, cfg.line_number_region_bg);
+    DrawRectangle(0.0f, 0.0f, cfg.line_number_width + SEPERATE_PADDING, text_view.height, cfg.line_number_region_bg);
     Vector2 pos {.x = origin.x - 2*SEPERATE_PADDING, .y = origin.y + (float)start * cfg.line_height - text_view.y};
-    for (size_t line = start; line < line_size.size() && pos.y < screen_height; line++, pos.y += cfg.line_height) {
+    for (size_t line = start; line < line_size.size() && pos.y < text_view.height; line++, pos.y += cfg.line_height) {
         pos.x = origin.x - 2*SEPERATE_PADDING;
         int line_temp = line+1;
         Color fg = cursor.row == line ? cfg.current_line_number_color : cfg.line_number_color;

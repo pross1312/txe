@@ -11,5 +11,5 @@ $ ./txe
 - [x] Get rid of camera
 - [x] Draw line number
 - [x] Implement navigate by words, line deletion, etc ...
-- [ ] Report action
+- [x] Report msg
 - [ ] Allow input file name when save to new file

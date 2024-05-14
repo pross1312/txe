@@ -14,6 +14,7 @@ struct TextEditor: public Editor {
 
     Vector2 origin;
     Rectangle text_view;
+    std::string msg;
 
     TextEditor();
     TextEditor(const char *file);
@@ -21,11 +22,14 @@ struct TextEditor: public Editor {
     bool load(const char *file);
     bool save();
 
-    int handle_events() override;
     size_t get_idx_prev_word();
     size_t get_idx_next_word();
 
+    int handle_events() override;
+    void on_resize() override;
+
     void render() override;
+    void render_msg();
     void render_line_number(size_t start);
 
     void move_text_view_to_point(Vector2 point);

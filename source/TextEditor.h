@@ -22,6 +22,8 @@ struct TextEditor: public Editor {
     bool save();
 
     int handle_events() override;
+    size_t get_idx_prev_word();
+    size_t get_idx_next_word();
 
     void render() override;
     void render_line_number(size_t start);

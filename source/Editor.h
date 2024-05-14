@@ -50,7 +50,7 @@ public:
     virtual void append_at_cursor(std::string_view str, Color fg = DEFAULT_FG, std::optional<Color> bg = std::nullopt);
     virtual void append_at_cursor(const char *str, size_t len, Color fg = DEFAULT_FG, std::optional<Color> bg = std::nullopt);
     virtual void set_cells_color(size_t start, size_t len, std::optional<Color> fg = std::nullopt, std::optional<Color> bg = std::nullopt);
-    virtual void pop_at_cursor();
+    virtual void pop_at_cursor(size_t amount = 1);
 
     virtual void move_cursor_up(size_t amount);
     virtual void move_cursor_down(size_t amount);

@@ -51,7 +51,6 @@ void destroy_config() {
 
 int main(int argc, const char **argv) {
     SetConfigFlags(FLAG_WINDOW_MAXIMIZED);
-    int factor = 110;
 
     InitWindow(0, 0, "Txe");
 

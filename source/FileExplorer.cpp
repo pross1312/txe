@@ -10,14 +10,15 @@
 
 using namespace std;
 
-FileExplorer::FileExplorer(): FileExplorer(fs::current_path()) { }
+FileExplorer::FileExplorer(): FileExplorer(fs::current_path()) {}
 
 FileExplorer::FileExplorer(fs::path current_file): Editor(Mode::File) {
     if (!current_file.is_absolute()) {
         current_file = fs::absolute(current_file);
     }
-    file_name = current_file.filename();
-    change_dir(current_file.parent_path());
+    file_name = "";
+    fs::path dir = fs::is_directory(current_file) ? current_file : current_file.parent_path();
+    change_dir(dir);
 }
 
 void FileExplorer::list_entries() {
@@ -78,7 +79,7 @@ int FileExplorer::handle_events() {
             change_dir(current_dir.parent_path());
         }
     }
-    if (IsKeyPressed(KEY_ENTER) && entries.size() > 0) {
+    else if (IsKeyPressed(KEY_ENTER) && entries.size() > 0) {
         fs::path path(entries[current_index]);
         if (fs::is_directory(path)) {
             change_dir(path);
@@ -87,10 +88,10 @@ int FileExplorer::handle_events() {
             return 1;// open_file(path);
         }
     }
-    if (is_key_hold(KEY_LEFT)  || is_alt_and_key_hold(KEY_H))     move_cursor_left(1);
-    if (is_key_hold(KEY_RIGHT) || is_alt_and_key_hold(KEY_L))     move_cursor_right(1);
-    if (is_key_hold(KEY_UP)    || is_alt_and_key_hold(KEY_K))     move_cursor_up(1);
-    if (is_key_hold(KEY_DOWN)  || is_alt_and_key_hold(KEY_J))     move_cursor_down(1);
+    else if (is_key_hold(KEY_LEFT)  || is_ctrl_and_key_hold(KEY_B))     move_cursor_left(1);
+    else if (is_key_hold(KEY_RIGHT) || is_ctrl_and_key_hold(KEY_F))     move_cursor_right(1);
+    else if (is_key_hold(KEY_UP)    || is_ctrl_and_key_hold(KEY_P))     move_cursor_up(1);
+    else if (is_key_hold(KEY_DOWN)  || is_ctrl_and_key_hold(KEY_N))     move_cursor_down(1);
     return 0;
 }
 

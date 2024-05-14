@@ -6,7 +6,7 @@ inline bool is_rect_in_rect(Rectangle rect, Rectangle parent) {
     return !(rect.x + rect.width < parent.x || rect.y + rect.height < parent.y || rect.x > parent.x + parent.width || rect.y > parent.y + parent.height);
 }
 inline bool is_ctrl_key(KeyboardKey key_code) {
-    return (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && IsKeyPressed(key_code);
+    return (IsKeyDown(KEY_CAPS_LOCK) || IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && IsKeyPressed(key_code);
 }
 inline bool is_alt_key(KeyboardKey key_code) {
     return (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && IsKeyPressed(key_code);
@@ -18,7 +18,7 @@ inline bool is_alt_and_key_hold(KeyboardKey key_code) {
     return (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)) && (IsKeyPressed(key_code) || IsKeyPressedRepeat(key_code));
 }
 inline bool is_ctrl_and_key_hold(KeyboardKey key_code) {
-    return (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && (IsKeyPressed(key_code) || IsKeyPressedRepeat(key_code));
+    return (IsKeyDown(KEY_CAPS_LOCK) || IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL)) && (IsKeyPressed(key_code) || IsKeyPressedRepeat(key_code));
 }
 
 inline int DamerauLevenshteinDistance(std::string_view source, std::string_view target, int threshold) {

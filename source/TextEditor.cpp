@@ -1,6 +1,7 @@
 #include "TextEditor.h"
 #include "Helper.h"
 
+#include <functional>
 #include <numeric>
 #include <fstream>
 using namespace std;
@@ -23,20 +24,70 @@ TextEditor::TextEditor(const char *file): TextEditor() {
     }
 }
 
+size_t TextEditor::get_idx_prev_word() {
+    bool found = false;
+    size_t i = cursor.idx;
+    for (; i != 0; i--) {
+        if (isspace(buffer[i-1].c) && found) break;
+        if (!isspace(buffer[i-1].c)) found = true;
+    }
+    return i;
+}
+
+size_t TextEditor::get_idx_next_word() {
+    bool found = false;
+    size_t i = cursor.idx;
+    for (; i < buffer.size(); i++) {
+        if (isspace(buffer[i].c) && found) break;
+        if (!isspace(buffer[i].c)) found = true;
+    }
+    return i;
+}
+
 int TextEditor::handle_events() {
+    static bool is_ctrl_x = false;
     Editor::handle_events();
-    if (is_ctrl_key(KEY_S)) save();
-    if (IsKeyDown(KEY_LEFT_ALT) && IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_H)) {
+
+    if (is_ctrl_key(KEY_G)) is_ctrl_x = false;
+    if (is_ctrl_x) {
+        if (is_ctrl_key(KEY_S)) {
+            is_ctrl_x = false;
+            save();
+        } else if (is_ctrl_key(KEY_F)) {
+            is_ctrl_x = false;
+            return 1;
+        } else if (is_ctrl_key(KEY_C)) exit(0);
+    }
+    else if (is_alt_and_key_hold(KEY_BACKSPACE)) {
+        pop_at_cursor(cursor.idx - get_idx_prev_word());
+    }
+    else if (is_alt_and_key_hold(KEY_F) && cursor.idx < buffer.size()) {
+        move_cursor_right(get_idx_next_word() - cursor.idx);
+    }
+    else if (is_alt_and_key_hold(KEY_B) && cursor.idx > 0) {
+        move_cursor_left(cursor.idx - get_idx_prev_word());
+    }
+    else if (is_ctrl_key(KEY_X)) is_ctrl_x = true;
+    else if (is_ctrl_key(KEY_A)) {
+        cursor.idx -= cursor.col;
+        cursor.col = 0;
+    }
+    else if (is_ctrl_key(KEY_E)) {
+        size_t new_cursor_col = line_size[cursor.row];
+        if (cursor.row != line_size.size()-1) new_cursor_col -= 1;
+        cursor.idx += new_cursor_col - cursor.col;
+        cursor.col = new_cursor_col;
+    }
+    else if (IsKeyDown(KEY_LEFT_ALT) && IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_COMMA)) {
         cursor.idx = 0;
         cursor.row = 0;
         cursor.col = 0;
     }
-    if (IsKeyDown(KEY_LEFT_ALT) && IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_L)) {
+    else if (IsKeyDown(KEY_LEFT_ALT) && IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_PERIOD)) {
         cursor.idx = buffer.size();
         cursor.row = line_size.size()-1;
         cursor.col = line_size[cursor.row];
     }
-    if (is_ctrl_key(KEY_P)) return 1;
     return 0;
 }
 

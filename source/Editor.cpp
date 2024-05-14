@@ -13,13 +13,13 @@ void Editor::add_new_line(size_t size) {
 int Editor::handle_events() {
     int c;
     while ((c = GetCharPressed())) append_at_cursor((char)c);
-    if (IsKeyPressed(KEY_TAB))     append_at_cursor('\t');
-    if (is_key_hold(KEY_BACKSPACE)) pop_at_cursor();
-    if (is_key_hold(KEY_ENTER))     append_at_cursor('\n');
-    if (is_key_hold(KEY_LEFT)  || is_alt_and_key_hold(KEY_H))     move_cursor_left(1);
-    if (is_key_hold(KEY_RIGHT) || is_alt_and_key_hold(KEY_L))     move_cursor_right(1);
-    if (is_key_hold(KEY_UP)    || is_alt_and_key_hold(KEY_K))     move_cursor_up(1);
-    if (is_key_hold(KEY_DOWN)  || is_alt_and_key_hold(KEY_J))     move_cursor_down(1);
+         if (IsKeyPressed(KEY_TAB))     append_at_cursor('\t');
+    else if (is_key_hold(KEY_BACKSPACE)) pop_at_cursor();
+    else if (is_key_hold(KEY_ENTER))     append_at_cursor('\n');
+    else if (is_key_hold(KEY_LEFT)  || is_ctrl_and_key_hold(KEY_B))     move_cursor_left(1);
+    else if (is_key_hold(KEY_RIGHT) || is_ctrl_and_key_hold(KEY_F))     move_cursor_right(1);
+    else if (is_key_hold(KEY_UP)    || is_ctrl_and_key_hold(KEY_P))     move_cursor_up(1);
+    else if (is_key_hold(KEY_DOWN)  || is_ctrl_and_key_hold(KEY_N))     move_cursor_down(1);
     return 0;
 }
 
@@ -46,19 +46,29 @@ void Editor::append_at_cursor(char c, Color fg, std::optional<Color> bg) {
     }
 }
 
-void Editor::pop_at_cursor() {
-    if (cursor.idx == 0) return;
-    buffer.erase(buffer.begin() + cursor.idx-1);
-    cursor.idx--;
-    if (cursor.col == 0) {
-        cursor.col = line_size[cursor.row-1]-1;
-        line_size[cursor.row-1] += line_size[cursor.row];
-        line_size.erase(line_size.begin() + cursor.row);
-        cursor.row--;
-    } else {
-        cursor.col--;
+void Editor::pop_at_cursor(size_t amount) {
+    if (amount > cursor.idx) amount = cursor.idx;
+    cursor.idx -= amount;
+    buffer.erase(buffer.begin() + cursor.idx, buffer.begin() + cursor.idx + amount);
+    while (amount > 0) {
+        if (cursor.col >= amount) {
+            cursor.col -= amount;
+            line_size[cursor.row] -= amount;
+            break;
+        } else if (cursor.row == 0) {
+            line_size[cursor.row] -= cursor.col;
+            cursor.col = 0;
+            break;
+        } else {
+            amount -= cursor.col;
+            amount--;
+            size_t new_cursor_col = line_size[cursor.row-1]-1;
+            line_size[cursor.row-1] += -1 + line_size[cursor.row] - cursor.col;
+            cursor.col = new_cursor_col;
+            line_size.erase(line_size.begin() + cursor.row);
+            cursor.row--;
+        }
     }
-    line_size[cursor.row]--;
 }
 
 void Editor::set_cells_color(size_t start, size_t len, optional<Color> fg, optional<Color> bg) {
@@ -113,8 +123,8 @@ void Editor::move_cursor_down(size_t amount) {
 }
 
 void Editor::move_cursor_left(size_t amount) {
-    if (cursor.idx >= amount) cursor.idx -= amount;
-    else cursor.idx = 0;
+    if (amount > cursor.idx) amount = cursor.idx;
+    cursor.idx -= amount;
     while (amount > 0) {
         if (cursor.col >= amount) {
             cursor.col -= amount;
@@ -132,8 +142,8 @@ void Editor::move_cursor_left(size_t amount) {
 }
 
 void Editor::move_cursor_right(size_t amount) {
-    if (buffer.size() - cursor.idx <= amount) cursor.idx = buffer.size();
-    else cursor.idx += amount;
+    if (cursor.idx + amount > buffer.size()) amount = buffer.size() - cursor.idx;
+    cursor.idx += amount;
     while (amount > 0) {
         if (line_size[cursor.row] - cursor.col >= amount + 1) { // skip \n
             cursor.col += amount;

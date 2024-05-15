@@ -1,6 +1,9 @@
 #pragma once
 #include <raylib.h>
 #include <string>
+inline float calculate_luminance(Color c){
+    return (float) (0.2126*c.r + 0.7152*c.g + 0.0722*c.b);
+}
 inline bool is_char_in(char ch, std::string_view str) {
     for (char c : str) {
         if (c == ch) return true;

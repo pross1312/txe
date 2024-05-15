@@ -1,8 +1,11 @@
 #ifndef CONFIG_H
 #define CONFIG_H
+#include "Helper.h"
 
 #include <raylib.h>
-
+enum CursorShape {
+    Block, Line, Underline
+};
 const Color DEFAULT_BG = GetColor(0x282828ff);
 const Color DEFAULT_FG = WHITE;
 struct Config {
@@ -14,6 +17,11 @@ struct Config {
 #endif // USE_SDF_FONT
 
     Color cursor_color = WHITE;
+    Color char_at_cursor_color = calculate_luminance(cursor_color) < 140.0f ? WHITE : BLACK;
+    CursorShape cursor_shape = CursorShape::Block;
+    float cursor_width = cursor_shape == CursorShape::Line ? 2 : 12;
+    float cursor_height = cursor_shape == CursorShape::Underline ? 2 : line_height;
+
 
     Color dir_color = SKYBLUE;
     Color file_color = WHITE;
@@ -25,11 +33,10 @@ struct Config {
     Color current_line_number_color = GetColor(0xdfdfdfff);
 
     float spacing = 0.0f;
-    int cursor_width = 2;
     int tab_size = 4;
     float line_number_width = 70.0f;
     float msg_box_height = line_height + 5.0f;
-    const char* list_words = " .,!@#$%^&*-=+()[]{}\n\t\r";
+    const char* list_words = " ;:<>.,!@#$%^&*-=+()[]{}\n\t\r";
 };
 
 #endif // CONFIG_H

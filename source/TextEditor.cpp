@@ -64,6 +64,17 @@ int TextEditor::handle_events() {
         is_ctrl_x = true;
         msg = "CTRL-X ..";
     }
+    else if (is_ctrl_key(KEY_K)) {
+        const size_t last_col = line_size[cursor.row] - (cursor.row == line_size.size()-1 ? 0 : 1);
+        size_t start = cursor.idx;
+        if (cursor.col == last_col) {
+            move_cursor_to(cursor.row+1, 0);
+            pop_at_cursor(cursor.idx - start);
+        } else {
+            move_cursor_to(cursor.row, last_col);
+            pop_at_cursor(cursor.idx - start);
+        }
+    }
     else if (is_ctrl_key(KEY_A)) {
         cursor.idx -= cursor.col;
         cursor.col = 0;
@@ -160,8 +171,11 @@ void TextEditor::render() {
     }
 
 
-    while (i < buffer.size() && render_cursor.y < text_view.y + text_view.height) {
-        Cell cell = buffer[i++];
+    for (; i < buffer.size() && render_cursor.y < text_view.y + text_view.height; i++) {
+        Cell cell = buffer[i];
+        if (cfg.cursor_shape == CursorShape::Block && i == cursor.idx) {
+            cell.fg = cfg.char_at_cursor_color;
+        }
         int ch_w = get_w(cell.c);
         if (cell.c == '\n') {
             render_cursor.y += cfg.line_height;

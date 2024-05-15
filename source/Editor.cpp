@@ -86,7 +86,7 @@ void Editor::move_cursor_to(size_t row, size_t col) {
         cursor.idx = buffer.size();
     } else if (col >= line_size[row]) {
         cursor.row = row;
-        cursor.col = line_size[row]-1;
+        cursor.col = line_size[row] - (row == line_size.size()-1 ? 0 : 1);
         cursor.idx = std::accumulate(line_size.begin(), line_size.begin() + cursor.row, 0) + cursor.col;
     } else {
         cursor.row = row;
@@ -207,7 +207,7 @@ void Editor::put_cell(Cell cell, Vector2 position, size_t times) {
 }
 
 void Editor::put_cursor(Vector2 position) {
-    DrawRectangle(position.x, position.y, cfg.cursor_width, cfg.line_height, cfg.cursor_color);
+    DrawRectangle(position.x, position.y + cfg.line_height - cfg.cursor_height, cfg.cursor_width, cfg.cursor_height, cfg.cursor_color);
 }
 
 Vector2 Editor::get_cursor_pos() {

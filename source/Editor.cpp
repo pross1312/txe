@@ -23,14 +23,10 @@ int Editor::handle_events() {
     return 0;
 }
 
-void Editor::append_at_cursor(const char *str, size_t len, Color fg, std::optional<Color> bg) {
-    for (size_t i = 0; i < len; i++) {
-        append_at_cursor(str[i], fg, bg);
-    }
-}
-
 void Editor::append_at_cursor(string_view str, Color fg, std::optional<Color> bg) {
-    append_at_cursor(str.data(), str.size(), fg, bg);
+    for (char ch : str) {
+        append_at_cursor(ch, fg, bg);
+    }
 }
 
 void Editor::append_at_cursor(char c, Color fg, std::optional<Color> bg) {

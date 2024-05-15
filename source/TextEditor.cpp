@@ -2,6 +2,7 @@
 #include "Helper.h"
 
 #include <functional>
+#include <cstring>
 #include <numeric>
 #include <cassert>
 #include <fstream>
@@ -73,28 +74,44 @@ int TextEditor::handle_events() {
         }
         msg = "Marking ..";
     }
-    else if (is_ctrl_key(KEY_K)) {
-        if (start_selection.has_value()) {
-            size_t start = start_selection.value();
-            if (cursor.idx > start) {
-                pop_at_cursor(cursor.idx - start);
-            } else {
-                size_t amount = start - cursor.idx;
-                move_cursor_right(amount);
-                pop_at_cursor(amount);
-            }
-            start_selection = nullopt;
-        } else {
-            const size_t last_col = line_size[cursor.row] - (cursor.row == line_size.size()-1 ? 0 : 1);
-            size_t start = cursor.idx;
-            if (cursor.col == last_col) {
-                move_cursor_to(cursor.row+1, 0);
-                pop_at_cursor(cursor.idx - start);
-            } else {
-                move_cursor_to(cursor.row, last_col);
-                pop_at_cursor(cursor.idx - start);
-            }
+    else if (is_alt_key(KEY_W) && start_selection.has_value()) {
+        string selected_text = get_selected_text();
+        SetClipboardText(selected_text.c_str());
+        start_selection = nullopt;
+    }
+    else if (is_ctrl_key(KEY_Y)) {
+        const char* text = GetClipboardText();
+        if (text != nullptr) {
+            append_at_cursor(text);
         }
+    }
+    else if (is_ctrl_key(KEY_W) && start_selection.has_value()) {
+        string selected_text = get_selected_text();
+        SetClipboardText(selected_text.c_str());
+
+        size_t start = start_selection.value();
+        if (cursor.idx > start) {
+            pop_at_cursor(cursor.idx - start);
+        } else {
+            size_t amount = start - cursor.idx;
+            move_cursor_right(amount);
+            pop_at_cursor(amount);
+        }
+        start_selection = nullopt;
+    }
+    else if (is_ctrl_key(KEY_K)) {
+        const size_t last_col = line_size[cursor.row] - (cursor.row == line_size.size()-1 ? 0 : 1);
+        size_t start = cursor.idx;
+        if (cursor.col == last_col) {
+            move_cursor_to(cursor.row+1, 0);
+            pop_at_cursor(cursor.idx - start);
+        } else {
+            move_cursor_to(cursor.row, last_col);
+            string cut_text = get_text(start, cursor.idx);
+            SetClipboardText(cut_text.c_str());
+            pop_at_cursor(cursor.idx - start);
+        }
+        start_selection = nullopt;
     }
     else if (is_ctrl_key(KEY_A)) {
         cursor.idx -= cursor.col;
@@ -162,6 +179,23 @@ void TextEditor::move_text_view_to_point(Vector2 point) {
 
     if (point.y + cfg.line_height > text_view.y + text_view.height - PADDING_BOTTOM_RIGHT.y) text_view.y += point.y + cfg.line_height - (text_view.y + text_view.height) + PADDING_BOTTOM_RIGHT.y;
     else if (point.y < text_view.y) text_view.y -= text_view.y - point.y + PADDING_TOP_LEFT.y;
+}
+
+string TextEditor::get_text(size_t start, size_t end) {
+    assert(end >= start);
+    string result;
+    result.reserve(end - start);
+    while (start < buffer.size() && start < end) result.push_back(buffer[start++].c);
+    return result;
+}
+
+string TextEditor::get_selected_text() {
+    if (start_selection.has_value()) {
+        size_t start = std::min(start_selection.value(), cursor.idx);
+        size_t end = std::max(start_selection.value(), cursor.idx);
+        return get_text(start, end);
+    }
+    return "";
 }
 
 bool TextEditor::is_selected(size_t i) {

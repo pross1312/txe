@@ -16,6 +16,6 @@ $ ./txe
 - [x] Fix navigation by words, introduce word seperators
 - [x] Allow multiple cursor shape (block/line/underline)
 - [x] Selection
-- [ ] Copy/Paste
+- [x] Copy/Paste
 - [ ] Searching
 - [ ] Highlight

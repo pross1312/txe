@@ -25,7 +25,11 @@ struct TextEditor: public Editor {
     int handle_events() override;
     void on_resize() override;
 
+
+    std::string get_text(size_t start, size_t end = std::string::npos);
+    std::string get_selected_text();
     bool is_selected(size_t i);
+
     void render() override;
     void render_msg();
     void render_line_number(size_t start);

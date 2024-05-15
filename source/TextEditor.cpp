@@ -3,16 +3,20 @@
 
 #include <functional>
 #include <numeric>
+#include <cassert>
 #include <fstream>
 using namespace std;
 
 constexpr float SEPERATE_PADDING = 10.0f;
 
-TextEditor::TextEditor(const char *file): Editor(Mode::Text) {
+TextEditor::TextEditor(const fs::path& file): Editor(Mode::Text) {
+    assert(!fs::is_directory(file) && "Must create TextEditor with a file");
     if (!load(file)) {
         TraceLog(LOG_INFO, current_file.c_str());
+        SetWindowTitle("Txe");
+    } else {
+        SetWindowTitle(TextFormat("%s - Txe", file.c_str()));
     }
-    SetWindowTitle(TextFormat("%s - Txe", file));
     on_resize();
 }
 
@@ -83,8 +87,8 @@ int TextEditor::handle_events() {
     return 0;
 }
 
-bool TextEditor::load(const char *file) {
-    current_file = fs::absolute(fs::path(file));
+bool TextEditor::load(const fs::path& file) {
+    current_file = fs::absolute(file);
 
     std::ifstream fin(file);
     if (!fin.is_open()) {

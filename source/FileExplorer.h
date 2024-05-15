@@ -13,7 +13,7 @@ struct FileExplorer: public Editor {
     std::vector<std::string> entries;
 
     FileExplorer();
-    FileExplorer(fs::path current_file);
+    FileExplorer(const fs::path& current_file);
 
     inline fs::path get_file() { return current_dir / file_name; }
 

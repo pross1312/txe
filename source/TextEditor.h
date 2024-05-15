@@ -16,9 +16,9 @@ struct TextEditor: public Editor {
     Rectangle text_view;
     std::string msg;
 
-    TextEditor(const char *file);
+    TextEditor(const fs::path& path);
 
-    bool load(const char *file);
+    bool load(const fs::path& path);
     bool save();
 
     int handle_events() override;

@@ -12,12 +12,8 @@ using namespace std;
 
 FileExplorer::FileExplorer(): FileExplorer(fs::current_path()) {}
 
-FileExplorer::FileExplorer(fs::path current_file): Editor(Mode::File) {
-    if (!current_file.is_absolute()) {
-        current_file = fs::absolute(current_file);
-    }
-    file_name = "";
-    fs::path dir = fs::is_directory(current_file) ? current_file : current_file.parent_path();
+FileExplorer::FileExplorer(const fs::path& dir): Editor(Mode::File), file_name("") {
+    assert(fs::is_directory(dir) && "Must create FileExplorer with a directory");
     change_dir(dir);
 }
 
@@ -40,7 +36,7 @@ void FileExplorer::list_entries() {
         }
         pclose(pipe);
     }
-    if (current_index > entries.size()) current_index = 0;
+    if (current_index >= entries.size()) current_index = 0;
     put_entries();
 }
 

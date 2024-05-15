@@ -68,13 +68,12 @@ int main(int argc, const char **argv) {
             switch (editor->type) {
             case Mode::Text: {
                 TextEditor *tx = static_cast<TextEditor*>(editor);
-                Editor* new_editor = new FileExplorer(tx->current_file);
+                Editor* new_editor = new FileExplorer(fs::absolute(tx->current_file).parent_path());
                 delete editor;
                 editor = new_editor;
             } break;
             case Mode::File: {
-                fs::path file = static_cast<FileExplorer*>(editor)->get_file();
-                Editor* new_editor = new TextEditor(file.c_str());
+                Editor* new_editor = new TextEditor(static_cast<FileExplorer*>(editor)->get_file());
                 delete editor;
                 editor = new_editor;
             } break;

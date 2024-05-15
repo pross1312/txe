@@ -10,13 +10,12 @@ struct TextEditor: public Editor {
     const Vector2 PADDING_BOTTOM_RIGHT { .x = 50.0f, .y = 10.0f };
     const Vector2 PADDING_TOP_LEFT     { .x = 0.0f, .y = 0.0f };
 
-    std::optional<fs::path> current_file;
+    fs::path current_file;
 
     Vector2 origin;
     Rectangle text_view;
     std::string msg;
 
-    TextEditor();
     TextEditor(const char *file);
 
     bool load(const char *file);

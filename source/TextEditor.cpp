@@ -8,17 +8,12 @@ using namespace std;
 
 constexpr float SEPERATE_PADDING = 10.0f;
 
-TextEditor::TextEditor(): Editor(Mode::Text) {
-    SetWindowTitle("Txe");
-    current_file = nullopt;
-    on_resize();
-}
-TextEditor::TextEditor(const char *file): TextEditor() {
+TextEditor::TextEditor(const char *file): Editor(Mode::Text) {
     if (!load(file)) {
-        TraceLog(LOG_INFO, current_file.value().c_str());
+        TraceLog(LOG_INFO, current_file.c_str());
     }
-    current_file = fs::absolute(fs::path(file));
     SetWindowTitle(TextFormat("%s - Txe", file));
+    on_resize();
 }
 
 void TextEditor::on_resize() {
@@ -42,14 +37,10 @@ int TextEditor::handle_events() {
     if (is_ctrl_x) {
         if (is_ctrl_key(KEY_S)) {
             is_ctrl_x = false;
-            if (current_file.has_value()) {
-                if (save()) {
-                    msg = "Saved";
-                } else {
-                    msg = TextFormat("Can't save to file %s", current_file.value().c_str());
-                }
+            if (save()) {
+                msg = "Saved";
             } else {
-                msg = "No file path";
+                msg = TextFormat("Can't save to file %s", current_file.c_str());
             }
         } else if (is_ctrl_key(KEY_F)) {
             is_ctrl_x = false;
@@ -97,7 +88,7 @@ bool TextEditor::load(const char *file) {
 
     std::ifstream fin(file);
     if (!fin.is_open()) {
-        TraceLog(LOG_ERROR, TextFormat("Can't open file %s", file));
+        TraceLog(LOG_ERROR, "Can't open file %s", file);
         return false;
     }
 
@@ -115,22 +106,18 @@ bool TextEditor::load(const char *file) {
 }
 
 bool TextEditor::save() {
-    if (current_file.has_value()) {
-        const fs::path &file_path = current_file.value();
-        std::ofstream fout(file_path);
-        if (!fout.is_open()) {
-            TraceLog(LOG_ERROR, TextFormat("Can't open file %s", file_path.c_str()));
-            return false;
-        }
-
-        for (size_t i = 0; i < buffer.size(); i++) {
-            fout << buffer[i].c;
-        }
-
-        fout.close();
-        return true;
+    std::ofstream fout(current_file);
+    if (!fout.is_open()) {
+        TraceLog(LOG_ERROR, "Can't open file %s", current_file.c_str());
+        return false;
     }
-    return false;
+
+    for (size_t i = 0; i < buffer.size(); i++) {
+        fout << buffer[i].c;
+    }
+
+    fout.close();
+    return true;
 }
 
 void TextEditor::move_text_view_to_point(Vector2 point) {

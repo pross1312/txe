@@ -107,13 +107,13 @@ int FileExplorer::handle_events() {
         // }
     }
     else if (IsKeyPressed(KEY_TAB) && entries.size() > 0) {
-        fs::path file(entries[current_index]);
-        if (entries.size() == 1 && fs::is_directory(file)) {
-            change_dir(file);
+        fs::path path(entries[current_index]);
+        if (fs::is_directory(path) && (entries.size() == 1 || fs::equivalent(path, current_dir / file_name))) {
+            change_dir(path);
         } else {
             move_cursor_to(0, line_size[0]-1);
             pop_at_cursor(file_name.size());
-            file_name = file.filename().string();
+            file_name = path.filename().string();
             append_at_cursor(file_name);
             list_entries();
         }

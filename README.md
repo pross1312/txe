@@ -14,3 +14,6 @@ $ ./txe
 - [x] Report msg
 - [x] Allow input file name when save to new file
 - [x] Fix navigation by words, introduce word seperators
+- [ ] Allow multiple cursor shape (block/line/underline)
+- [ ] Searching
+- [ ] Highlight

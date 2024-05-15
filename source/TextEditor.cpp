@@ -15,7 +15,7 @@ TextEditor::TextEditor(): Editor(Mode::Text) {
 }
 TextEditor::TextEditor(const char *file): TextEditor() {
     if (!load(file)) {
-        abort();
+        TraceLog(LOG_INFO, current_file.value().c_str());
     }
     current_file = fs::absolute(fs::path(file));
     SetWindowTitle(TextFormat("%s - Txe", file));
@@ -29,26 +29,6 @@ void TextEditor::on_resize() {
     text_view.y = 0.0f;
     text_view.width = GetScreenWidth() - origin.x;
     text_view.height = GetScreenHeight() - cfg.msg_box_height;
-}
-
-size_t TextEditor::get_idx_prev_word() {
-    bool found = false;
-    size_t i = cursor.idx;
-    for (; i != 0; i--) {
-        if (isspace(buffer[i-1].c) && found) break;
-        if (!isspace(buffer[i-1].c)) found = true;
-    }
-    return i;
-}
-
-size_t TextEditor::get_idx_next_word() {
-    bool found = false;
-    size_t i = cursor.idx;
-    for (; i < buffer.size(); i++) {
-        if (isspace(buffer[i].c) && found) break;
-        if (!isspace(buffer[i].c)) found = true;
-    }
-    return i;
 }
 
 int TextEditor::handle_events() {

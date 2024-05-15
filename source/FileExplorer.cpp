@@ -22,13 +22,6 @@ FileExplorer::FileExplorer(fs::path current_file): Editor(Mode::File) {
 }
 
 void FileExplorer::list_entries() {
-    buffer.resize(line_size[0]);
-    line_size.resize(2);
-    line_size[1] = 0;
-    cursor.row = 1;
-    cursor.col = 0;
-    cursor.idx = buffer.size();
-    current_index = 0;
     entries.clear();
 
     const char *command = TextFormat("fd --base-directory '%s' --exact-depth 1 -c never \'%.*s\'", current_dir.c_str(), file_name.size(), file_name.data());
@@ -47,20 +40,33 @@ void FileExplorer::list_entries() {
         }
         pclose(pipe);
     }
+    if (current_index > entries.size()) current_index = 0;
+    put_entries();
+}
 
-    size_t idx = 0;
-    for (const string &path : entries) {
+void FileExplorer::put_entries() {
+    buffer.resize(line_size[0]);
+    line_size.resize(2);
+    line_size[1] = 0;
+    Cursor old_cursor = cursor;
+    cursor.row = 1;
+    cursor.col = 0;
+    cursor.idx = buffer.size();
+
+    for (size_t i = 0; i < entries.size(); i++) {
+        const string& path = entries[(i+current_index)%entries.size()];
         Color fg, bg;
         if (fs::is_directory(path)) fg = cfg.dir_color;
         else fg = cfg.file_color;
-        if (idx == current_index) bg = cfg.on_cursor_bg_color;
-        else bg = cfg.n_on_cursor_bg_color;
+        // if (idx == current_index) bg = cfg.on_cursor_bg_color;
+        bg = cfg.n_on_cursor_bg_color;
         Editor::append_at_cursor(path, fg, bg);
         if (fs::is_directory(path)) append_at_cursor('/', fg, bg);
         append_at_cursor('\n');
-        idx++;
     }
-    move_cursor_to(0, line_size[0]-1);
+
+    if (file_name.size() != 0) cursor = old_cursor;
+    else move_cursor_to(0, line_size[0]-1);
 }
 
 int FileExplorer::handle_events() {
@@ -70,7 +76,14 @@ int FileExplorer::handle_events() {
         file_name.push_back((char)c);
         list_entries();
     }
-    if (is_key_hold(KEY_BACKSPACE)) {
+    if (is_alt_key(KEY_BACKSPACE) && file_name.size() > 0) {
+        size_t dir_len = current_dir.string().size() + 1;
+        size_t idx = std::max(dir_len, get_idx_prev_word());
+        file_name = file_name.substr(cursor.idx - idx);
+        pop_at_cursor(cursor.idx - idx);
+        list_entries();
+    }
+    else if (is_key_hold(KEY_BACKSPACE)) {
         if (file_name.size() > 0) {
             pop_at_cursor();
             file_name.resize(file_name.size()-1);
@@ -79,19 +92,52 @@ int FileExplorer::handle_events() {
             change_dir(current_dir.parent_path());
         }
     }
-    else if (IsKeyPressed(KEY_ENTER) && entries.size() > 0) {
-        fs::path path(entries[current_index]);
-        if (fs::is_directory(path)) {
-            change_dir(path);
+    else if (IsKeyPressed(KEY_ENTER)) {
+        // if (entries.size() > 0 && current_index >= 0) {
+        //     fs::path path(entries[current_index]);
+        //     if (fs::is_directory(path)) {
+        //         change_dir(path);
+        //     } else {
+        //         file_name = path.filename().string();
+        //     }
+        // } else {
+        fs::path file = get_file();
+        if (fs::is_directory(file)) change_dir(file);
+        else return 1;
+        // }
+    }
+    else if (IsKeyPressed(KEY_TAB) && entries.size() > 0) {
+        fs::path file(entries[current_index]);
+        if (entries.size() == 1 && fs::is_directory(file)) {
+            change_dir(file);
         } else {
-            file_name = path.filename().string();
-            return 1;// open_file(path);
+            move_cursor_to(0, line_size[0]-1);
+            pop_at_cursor(file_name.size());
+            file_name = file.filename().string();
+            append_at_cursor(file_name);
+            list_entries();
         }
+    }
+    else if (is_alt_and_key_hold(KEY_F) && cursor.idx < buffer.size()) {
+        size_t idx = std::min(line_size[0]-1, get_idx_next_word());
+        move_cursor_right(idx - cursor.idx);
+    }
+    else if (is_alt_and_key_hold(KEY_B) && cursor.idx > 0) {
+        size_t dir_len = current_dir.string().size() + 1;
+        size_t idx = std::max(dir_len, get_idx_prev_word());
+        move_cursor_left(cursor.idx - idx);
     }
     else if (is_key_hold(KEY_LEFT)  || is_ctrl_and_key_hold(KEY_B))     move_cursor_left(1);
     else if (is_key_hold(KEY_RIGHT) || is_ctrl_and_key_hold(KEY_F))     move_cursor_right(1);
-    else if (is_key_hold(KEY_UP)    || is_ctrl_and_key_hold(KEY_P))     move_cursor_up(1);
-    else if (is_key_hold(KEY_DOWN)  || is_ctrl_and_key_hold(KEY_N))     move_cursor_down(1);
+    else if (is_key_hold(KEY_UP)    || is_ctrl_and_key_hold(KEY_P)) {
+        current_index = (current_index + 1)%entries.size();
+        put_entries();
+    }
+    else if (is_key_hold(KEY_DOWN)  || is_ctrl_and_key_hold(KEY_N)) {
+        if (current_index == 0) current_index = entries.size()-1;
+        else current_index--;
+        put_entries();
+    }
     return 0;
 }
 
@@ -118,35 +164,45 @@ void FileExplorer::open_file(const fs::path &path) {
     (void)path;
 }
 
-void FileExplorer::set_current_idx(size_t idx) {
-    if (entries.size() == 0) return;
-    assert(idx < entries.size());
-    if (idx != current_index) {
-        size_t start = std::accumulate(line_size.begin(), line_size.begin()+current_index+1, 0);
-        set_cells_color(start, line_size[current_index+1], nullopt, nullopt);
-        start = std::accumulate(line_size.begin(), line_size.begin()+idx+1, 0);
-
-        set_cells_color(start, line_size[idx+1], nullopt, cfg.on_cursor_bg_color);
-        current_index = idx;
-    }
+void FileExplorer::set_current_idx(int idx) {
+    (void)idx;
+    // if (entries.size() == 0) return;
+    // if (idx != current_index) {
+    //     if (current_index != -1) {
+    //         size_t start = std::accumulate(line_size.begin(), line_size.begin()+current_index+1, 0);
+    //         set_cells_color(start, line_size[current_index+1], nullopt, nullopt);
+    //     }
+    //     if (idx != -1) {
+    //         size_t start = std::accumulate(line_size.begin(), line_size.begin()+idx+1, 0);
+    //         set_cells_color(start, line_size[idx+1], nullopt, cfg.on_cursor_bg_color);
+    //     }
+    //     current_index = idx;
+    // }
 }
 
 void FileExplorer::move_cursor_up(size_t amount) {
-    amount = std::min(current_index, amount);
-    if (amount != 0) set_current_idx(current_index - amount);
+    (void)amount;
+    // if (current_index >= 0) {
+    //     amount = std::min((size_t)current_index + 1, amount);
+    //     if (amount > 0) set_current_idx(current_index - (int)amount);
+    // }
 }
 
 void FileExplorer::move_cursor_down(size_t amount) {
-    amount = std::min(entries.size() - 1 - current_index, amount);
-    if (amount != 0) set_current_idx(current_index + amount);
+    (void)amount;
+    // if (amount != 0) set_current_idx((current_index + amount) % entries.size());
 }
 
 void FileExplorer::move_cursor_left(size_t amount) {
-    (void)amount;
+    if (cursor.idx >= (line_size[0] - 1 - file_name.size()) + amount) {
+        Editor::move_cursor_left(amount);
+    }
 }
 
 void FileExplorer::move_cursor_right(size_t amount) {
-    (void)amount;
+    if (cursor.idx + amount <= line_size[0]-1) {
+        Editor::move_cursor_right(amount);
+    }
 }
 
 void FileExplorer::render() {
@@ -154,14 +210,15 @@ void FileExplorer::render() {
     const float path_box_height = cfg.line_height*2;
     DrawLineEx(Vector2{0.0f, path_box_height}, Vector2{(float)GetScreenWidth(), path_box_height}, line_thickness, WHITE);
     Vector2 render_cursor {.x = 0.0f, .y = (path_box_height - cfg.line_height)*0.5f};
+
+    put_cursor(Vector2{.x = get_cursor_pos().x, .y = render_cursor.y});
     size_t i = 0;
     for (; i+1 < line_size[0]; i++) { // avoid overflow
         put_cell(buffer[i], render_cursor);
         render_cursor.x += get_w(buffer[i].c);
     }
-    put_cursor(render_cursor);
     // bring_point_into_view(render_cursor);
-    render_cursor.y = path_box_height + line_thickness;
+    render_cursor.y = path_box_height + line_thickness + render_cursor.y;
     render_cursor.x = 0.0f;
     i++;
     while (i < buffer.size()) {

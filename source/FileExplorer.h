@@ -17,8 +17,9 @@ struct FileExplorer: public Editor {
 
     inline fs::path get_file() { return current_dir / file_name; }
 
-    void set_current_idx(size_t idx);
+    void set_current_idx(int idx);
     void list_entries();
+    void put_entries();
 
     void change_dir(const fs::path &path);
     void open_file(const fs::path &path);

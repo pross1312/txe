@@ -22,9 +22,6 @@ struct TextEditor: public Editor {
     bool load(const char *file);
     bool save();
 
-    size_t get_idx_prev_word();
-    size_t get_idx_next_word();
-
     int handle_events() override;
     void on_resize() override;
 

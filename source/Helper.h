@@ -1,7 +1,15 @@
 #pragma once
 #include <raylib.h>
 #include <string>
-
+inline bool is_char_in(char ch, std::string_view str) {
+    for (char c : str) {
+        if (c == ch) return true;
+    }
+    return false;
+}
+inline int wrap_index(int i, int i_max) {
+   return ((i % i_max) + i_max) % i_max;
+}
 inline bool is_rect_in_rect(Rectangle rect, Rectangle parent) {
     return !(rect.x + rect.width < parent.x || rect.y + rect.height < parent.y || rect.x > parent.x + parent.width || rect.y > parent.y + parent.height);
 }

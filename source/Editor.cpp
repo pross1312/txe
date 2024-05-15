@@ -95,6 +95,26 @@ void Editor::move_cursor_to(size_t row, size_t col) {
     }
 }
 
+size_t Editor::get_idx_prev_word() {
+    bool found_word = false;
+    size_t i = cursor.idx;
+    for (; i != 0; i--) {
+        if (!is_char_in(buffer[i-1].c, cfg.list_words)) found_word = true;
+        else if (found_word) break;
+    }
+    return i;
+}
+
+size_t Editor::get_idx_next_word() {
+    bool found_word = false;
+    size_t i = cursor.idx;
+    for (; i < buffer.size(); i++) {
+        if (!is_char_in(buffer[i].c, cfg.list_words)) found_word = true;
+        else if (found_word) break;
+    }
+    return i;
+}
+
 void Editor::move_cursor_up(size_t amount) {
     if (cursor.row < amount) {
         cursor.idx = 0;

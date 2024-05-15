@@ -17,7 +17,7 @@ struct Config {
 
     Color dir_color = SKYBLUE;
     Color file_color = WHITE;
-    Color on_cursor_bg_color = GetColor(0x313131ff);
+    Color on_cursor_bg_color = GetColor(0x535353ff);
     Color n_on_cursor_bg_color = DEFAULT_BG;
 
     Color line_number_color = GetColor(0x6d6d6dff);
@@ -29,6 +29,7 @@ struct Config {
     int tab_size = 4;
     float line_number_width = 70.0f;
     float msg_box_height = line_height + 5.0f;
+    const char* list_words = " .,!@#$%^&*-=+()[]{}\n\t\r";
 };
 
 #endif // CONFIG_H

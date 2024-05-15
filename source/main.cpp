@@ -38,7 +38,7 @@ void destroy_config() {
 }
 
 int main(int argc, const char **argv) {
-    SetConfigFlags(FLAG_WINDOW_MAXIMIZED);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MINIMIZED);
 
     InitWindow(0, 0, "Txe");
 
@@ -50,7 +50,7 @@ int main(int argc, const char **argv) {
     if (argc > 1) {
         editor = new TextEditor(argv[1]);
     } else {
-        editor = new TextEditor;
+        editor = new FileExplorer;
     }
     while (!WindowShouldClose()) {
         if (IsWindowResized()) {

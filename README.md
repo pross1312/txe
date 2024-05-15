@@ -12,4 +12,5 @@ $ ./txe
 - [x] Draw line number
 - [x] Implement navigate by words, line deletion, etc ...
 - [x] Report msg
-- [ ] Allow input file name when save to new file
+- [x] Allow input file name when save to new file
+- [x] Fix navigation by words, introduce word seperators

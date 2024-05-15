@@ -25,7 +25,7 @@ void FileExplorer::list_entries() {
     entries.clear();
 
     const char *command = TextFormat("fd --base-directory '%s' --exact-depth 1 -c never \'%.*s\'", current_dir.c_str(), file_name.size(), file_name.data());
-    TraceLog(LOG_INFO, command);
+    // TraceLog(LOG_INFO, command);
     FILE *pipe = popen(command, "r");
     if (pipe == nullptr) {
         TraceLog(LOG_ERROR, strerrorname_np(errno));

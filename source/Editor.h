@@ -16,8 +16,8 @@ struct Cursor { size_t row = 0, col = 0; size_t idx = 0; };
 enum Mode     { Text, File };
 
 constexpr size_t INIT_BUFFER_SIZE = 1024;
-// inline std::vector<Cell> _buffer {};
-// inline std::vector<size_t> _line_size(1ull, 0);
+inline std::vector<Cell> _buffer {};
+inline std::vector<size_t> _line_size(1ull, 0);
 inline std::vector<int> _chars_width(128ull, 0);
 extern Config _cfg;
 
@@ -26,15 +26,14 @@ public:
     Mode type;
     Cursor cursor;
 
-    const Config &cfg = _cfg;
-    std::vector<Cell> buffer;
-    std::vector<size_t> line_size;
+    const Config& cfg = _cfg;
+    std::vector<Cell>& buffer = _buffer;
+    std::vector<size_t>& line_size = _line_size;
 
     std::vector<int> &chars_width = _chars_width;
 
-    Editor(Mode type, size_t init_buf_size = INIT_BUFFER_SIZE): type(type), cursor(), buffer(), line_size()  {
-        buffer.reserve(init_buf_size);
-        line_size.reserve(init_buf_size/50);
+    Editor(Mode type): type(type), cursor()  {
+        buffer.clear();
         line_size.resize(1);
         line_size[0] = 0;
 

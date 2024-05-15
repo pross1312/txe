@@ -15,6 +15,7 @@ struct Config {
 #ifdef USE_SDF_FONT
     Shader font_shader;
 #endif // USE_SDF_FONT
+    Color on_selection_bg = GetColor(0x3b3b3bff);
 
     Color cursor_color = WHITE;
     Color char_at_cursor_color = calculate_luminance(cursor_color) < 140.0f ? WHITE : BLACK;

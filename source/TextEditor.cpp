@@ -36,6 +36,7 @@ int TextEditor::handle_events() {
 
     if (is_ctrl_key(KEY_G)) {
         is_ctrl_x = false;
+        start_selection = nullopt;
         msg = "CTRL-G";
     }
     if (is_ctrl_x) {
@@ -64,15 +65,35 @@ int TextEditor::handle_events() {
         is_ctrl_x = true;
         msg = "CTRL-X ..";
     }
-    else if (is_ctrl_key(KEY_K)) {
-        const size_t last_col = line_size[cursor.row] - (cursor.row == line_size.size()-1 ? 0 : 1);
-        size_t start = cursor.idx;
-        if (cursor.col == last_col) {
-            move_cursor_to(cursor.row+1, 0);
-            pop_at_cursor(cursor.idx - start);
+    else if (is_ctrl_key(KEY_SPACE)) {
+        if (start_selection.has_value()) {
+            start_selection = nullopt;
         } else {
-            move_cursor_to(cursor.row, last_col);
-            pop_at_cursor(cursor.idx - start);
+            start_selection = cursor.idx;
+        }
+        msg = "Marking ..";
+    }
+    else if (is_ctrl_key(KEY_K)) {
+        if (start_selection.has_value()) {
+            size_t start = start_selection.value();
+            if (cursor.idx > start) {
+                pop_at_cursor(cursor.idx - start);
+            } else {
+                size_t amount = start - cursor.idx;
+                move_cursor_right(amount);
+                pop_at_cursor(amount);
+            }
+            start_selection = nullopt;
+        } else {
+            const size_t last_col = line_size[cursor.row] - (cursor.row == line_size.size()-1 ? 0 : 1);
+            size_t start = cursor.idx;
+            if (cursor.col == last_col) {
+                move_cursor_to(cursor.row+1, 0);
+                pop_at_cursor(cursor.idx - start);
+            } else {
+                move_cursor_to(cursor.row, last_col);
+                pop_at_cursor(cursor.idx - start);
+            }
         }
     }
     else if (is_ctrl_key(KEY_A)) {
@@ -143,6 +164,15 @@ void TextEditor::move_text_view_to_point(Vector2 point) {
     else if (point.y < text_view.y) text_view.y -= text_view.y - point.y + PADDING_TOP_LEFT.y;
 }
 
+bool TextEditor::is_selected(size_t i) {
+    if (start_selection.has_value()) {
+        size_t start = std::min(start_selection.value(), cursor.idx);
+        size_t end = std::max(start_selection.value(), cursor.idx);
+        return i >= start && i < end;
+    }
+    return false;
+}
+
 void TextEditor::render_msg() {
     Vector2 pos {.x = 0.0f, .y = (float)GetScreenHeight() - (cfg.line_height + cfg.msg_box_height)*0.5f};
     DrawRectangle(0.0f, (float)GetScreenHeight() - cfg.msg_box_height, (float)GetScreenWidth(), cfg.msg_box_height, DEFAULT_BG);
@@ -158,12 +188,10 @@ void TextEditor::render_msg() {
 }
 
 void TextEditor::render() {
+    Vector2 cursor_pos = get_cursor_pos();
+    move_text_view_to_point(cursor_pos);
 
-    Vector2 render_cursor = get_cursor_pos();
-    move_text_view_to_point(render_cursor);
-    put_cursor(world_to_view(render_cursor));
-
-    render_cursor = Vector2Zero();
+    Vector2 render_cursor = Vector2Zero();
     size_t i = 0, line = 0;
     while (line < line_size.size() && render_cursor.y + cfg.line_height <= text_view.y) {
         i += line_size[line++];
@@ -181,12 +209,18 @@ void TextEditor::render() {
             render_cursor.y += cfg.line_height;
             render_cursor.x = 0.0f;
         } else {
+            if (is_selected(i)) {
+                cell.bg = cfg.on_selection_bg;
+            }
             if (render_cursor.x < text_view.x + text_view.width && render_cursor.x + ch_w > text_view.x) {
                 put_cell(cell, world_to_view(render_cursor));
             }
             render_cursor.x += ch_w;
         }
     }
+
+    put_cursor(world_to_view(cursor_pos));
+
     render_line_number(line);
     render_msg();
 }

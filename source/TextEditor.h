@@ -15,6 +15,7 @@ struct TextEditor: public Editor {
     Vector2 origin;
     Rectangle text_view;
     std::string msg;
+    std::optional<size_t> start_selection;
 
     TextEditor(const fs::path& path);
 
@@ -24,6 +25,7 @@ struct TextEditor: public Editor {
     int handle_events() override;
     void on_resize() override;
 
+    bool is_selected(size_t i);
     void render() override;
     void render_msg();
     void render_line_number(size_t start);

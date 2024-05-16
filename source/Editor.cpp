@@ -1,6 +1,7 @@
 #include "Editor.h"
 #include "Helper.h"
 #include <numeric>
+#include <cassert>
 using namespace std;
 
 
@@ -11,12 +12,7 @@ void Editor::add_new_line(size_t size) {
 }
 
 int Editor::handle_events() {
-    int c;
-    while ((c = GetCharPressed())) append_at_cursor((char)c);
-         if (IsKeyPressed(KEY_TAB))     append_at_cursor('\t');
-    else if (is_key_hold(KEY_BACKSPACE)) pop_at_cursor();
-    else if (is_key_hold(KEY_ENTER))     append_at_cursor('\n');
-    else if (is_key_hold(KEY_LEFT)  || is_ctrl_and_key_hold(KEY_B))     move_cursor_left(1);
+         if (is_key_hold(KEY_LEFT)  || is_ctrl_and_key_hold(KEY_B))     move_cursor_left(1);
     else if (is_key_hold(KEY_RIGHT) || is_ctrl_and_key_hold(KEY_F))     move_cursor_right(1);
     else if (is_key_hold(KEY_UP)    || is_ctrl_and_key_hold(KEY_P))     move_cursor_up(1);
     else if (is_key_hold(KEY_DOWN)  || is_ctrl_and_key_hold(KEY_N))     move_cursor_down(1);

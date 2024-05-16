@@ -10,7 +10,7 @@ using namespace std;
 
 constexpr float SEPERATE_PADDING = 10.0f;
 
-TextEditor::TextEditor(const fs::path& file): Editor(Mode::Text) {
+TextEditor::TextEditor(const fs::path& file): Editor(Mode::Text), msg(), is_searching(false) {
     assert(!fs::is_directory(file) && "Must create TextEditor with a file");
     if (!load(file)) {
         TraceLog(LOG_INFO, current_file.c_str());
@@ -35,9 +35,19 @@ int TextEditor::handle_events() {
     static bool is_ctrl_x = false;
     Editor::handle_events();
 
+    int c;
+    while ((c = GetCharPressed())) {
+        if (!is_searching) {
+            append_at_cursor((char)c);
+        } else {
+            pattern.push_back((char)c);
+            search_iter = CellSliceSearch(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern).begin();
+        }
+    }
     if (is_ctrl_key(KEY_G)) {
         is_ctrl_x = false;
         start_selection = nullopt;
+        is_searching = false;
         msg = "CTRL-G";
     }
     if (is_ctrl_x) {
@@ -53,7 +63,53 @@ int TextEditor::handle_events() {
             return 1;
         } else if (is_ctrl_key(KEY_C)) exit(0);
     }
-    else if (is_alt_and_key_hold(KEY_BACKSPACE)) {
+    else if (is_key_hold(KEY_ENTER)) {
+        if (is_searching) {
+            move_cursor_to_idx(search_iter->data - buffer.data());
+            is_searching = false;
+        } else {
+            append_at_cursor('\n');
+        }
+    }
+    else if (IsKeyPressed(KEY_TAB)) {
+        append_at_cursor('\t');
+    }
+    else if (is_ctrl_key(KEY_S)) {
+        if (is_searching) {
+            ++search_iter;
+            if (search_iter == CellSliceSearch(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern).end()) {
+                msg = "No more items";
+                is_searching = false;
+            } else {
+                move_cursor_to_idx(search_iter->data - buffer.data());
+            }
+        } else {
+            is_searching = true;
+            msg = "Search: ";
+            // pattern.clear();
+            if (pattern.size() > 0) search_iter = CellSliceSearch(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern).begin();
+            move_cursor_to_idx(search_iter->data - buffer.data());
+        }
+    }
+    else if (is_ctrl_key(KEY_N)) {
+        if (is_searching) {
+            --search_iter;
+            if (search_iter->size == 0) {
+                msg = "No more items";
+                is_searching = false;
+            } else {
+                move_cursor_to_idx(search_iter->data - buffer.data());
+            }
+        }
+    }
+    else if (is_key_hold(KEY_BACKSPACE)) {
+        if (!is_searching) {
+            pop_at_cursor();
+        } else if (pattern.size() > 0) {
+            pattern.resize(pattern.size() - 1);
+        }
+    }
+    else if (is_alt_and_key_hold(KEY_BACKSPACE) && !is_searching) {
         pop_at_cursor(cursor.idx - get_idx_prev_word());
     }
     else if (is_alt_and_key_hold(KEY_F) && cursor.idx < buffer.size()) {
@@ -181,14 +237,6 @@ void TextEditor::move_text_view_to_point(Vector2 point) {
     else if (point.y < text_view.y) text_view.y -= text_view.y - point.y + PADDING_TOP_LEFT.y;
 }
 
-string TextEditor::get_text(size_t start, size_t end) {
-    assert(end >= start);
-    string result;
-    result.reserve(end - start);
-    while (start < buffer.size() && start < end) result.push_back(buffer[start++].c);
-    return result;
-}
-
 string TextEditor::get_selected_text() {
     if (start_selection.has_value()) {
         size_t start = std::min(start_selection.value(), cursor.idx);
@@ -219,6 +267,17 @@ void TextEditor::render_msg() {
         put_cell(cell, pos);
         pos.x += get_w(ch);
     }
+    if (is_searching) {
+        for (char ch : pattern) {
+            Cell cell {
+                .c = ch,
+                    .fg = DEFAULT_FG,
+                    .bg = nullopt
+            };
+            put_cell(cell, pos);
+            pos.x += get_w(ch);
+        }
+    }
 }
 
 void TextEditor::render() {
@@ -245,6 +304,12 @@ void TextEditor::render() {
         } else {
             if (is_selected(i)) {
                 cell.bg = cfg.on_selection_bg;
+            } else if (is_searching) {
+                // size_t start = search_iter->data - buffer.data();
+                // if (i >= start && i < start + pattern.size()) {
+                //     cell.bg = cfg.search_bg;
+                //     cell.fg = cfg.search_fg;
+                // }
             }
             if (render_cursor.x < text_view.x + text_view.width && render_cursor.x + ch_w > text_view.x) {
                 put_cell(cell, world_to_view(render_cursor));
@@ -253,7 +318,9 @@ void TextEditor::render() {
         }
     }
 
-    put_cursor(world_to_view(cursor_pos));
+    if (!is_searching) {
+        put_cursor(world_to_view(cursor_pos));
+    }
 
     render_line_number(line);
     render_msg();

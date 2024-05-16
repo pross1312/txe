@@ -1,5 +1,6 @@
 #pragma once
 #include "Editor.h"
+#include "CellSliceSearch.hpp"
 
 #include <filesystem>
 #include <optional>
@@ -14,7 +15,12 @@ struct TextEditor: public Editor {
 
     Vector2 origin;
     Rectangle text_view;
+
     std::string msg;
+    std::string pattern;
+    CellSliceSearch::Iterator search_iter;
+    bool is_searching;
+
     std::optional<size_t> start_selection;
 
     TextEditor(const fs::path& path);
@@ -26,7 +32,6 @@ struct TextEditor: public Editor {
     void on_resize() override;
 
 
-    std::string get_text(size_t start, size_t end = std::string::npos);
     std::string get_selected_text();
     bool is_selected(size_t i);
 

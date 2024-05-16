@@ -31,23 +31,55 @@ void TextEditor::on_resize() {
     text_view.height = GetScreenHeight() - cfg.msg_box_height;
 }
 
-int TextEditor::handle_events() {
-    static bool is_ctrl_x = false;
-    Editor::handle_events();
-
+int TextEditor::handle_searching_events() {
     int c;
     while ((c = GetCharPressed())) {
-        if (!is_searching) {
-            append_at_cursor((char)c);
-        } else {
-            pattern.push_back((char)c);
-            search_iter = CellSliceSearch(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern).begin();
-        }
+        pattern.push_back((char)c);
+        search_iter = CellSliceSearch(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern).begin();
     }
+    if (is_ctrl_key(KEY_G)) {
+        is_searching = false;
+        msg = "CTRL-G";
+    }
+    else if (is_key_hold(KEY_ENTER)) {
+        move_cursor_to_idx(search_iter->data - buffer.data());
+        is_searching = false;
+    }
+    else if (is_key_hold(KEY_BACKSPACE) && pattern.size() > 0) {
+        pattern.resize(pattern.size() - 1);
+        CellSliceSearch searcher(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern);
+        search_iter = searcher.begin();
+    }
+    else if (is_ctrl_key(KEY_S)) {
+        ++search_iter;
+        CellSliceSearch searcher(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern);
+        if (search_iter == searcher.end()) {
+            search_iter = searcher.begin();
+        }
+        move_cursor_to_idx(search_iter->data - buffer.data());
+    }
+    else if (is_ctrl_key(KEY_N)) {
+        CellSliceSearch searcher(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern);
+        if (search_iter == searcher.begin()) {
+            search_iter = searcher.end();
+        }
+        --search_iter;
+        move_cursor_to_idx(search_iter->data - buffer.data());
+    }
+    return 0;
+}
+
+int TextEditor::handle_events() {
+    if (is_searching) return handle_searching_events();
+
+    static bool is_ctrl_x = false;
+
+    Editor::handle_events();
+    int c;
+    while ((c = GetCharPressed())) append_at_cursor((char)c);
     if (is_ctrl_key(KEY_G)) {
         is_ctrl_x = false;
         start_selection = nullopt;
-        is_searching = false;
         msg = "CTRL-G";
     }
     if (is_ctrl_x) {
@@ -64,52 +96,22 @@ int TextEditor::handle_events() {
         } else if (is_ctrl_key(KEY_C)) exit(0);
     }
     else if (is_key_hold(KEY_ENTER)) {
-        if (is_searching) {
-            move_cursor_to_idx(search_iter->data - buffer.data());
-            is_searching = false;
-        } else {
-            append_at_cursor('\n');
-        }
+        append_at_cursor('\n');
     }
     else if (IsKeyPressed(KEY_TAB)) {
         append_at_cursor('\t');
     }
     else if (is_ctrl_key(KEY_S)) {
-        if (is_searching) {
-            ++search_iter;
-            if (search_iter == CellSliceSearch(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern).end()) {
-                msg = "No more items";
-                is_searching = false;
-            } else {
-                move_cursor_to_idx(search_iter->data - buffer.data());
-            }
-        } else {
-            is_searching = true;
-            msg = "Search: ";
-            // pattern.clear();
-            if (pattern.size() > 0) search_iter = CellSliceSearch(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern).begin();
-            move_cursor_to_idx(search_iter->data - buffer.data());
-        }
-    }
-    else if (is_ctrl_key(KEY_N)) {
-        if (is_searching) {
-            --search_iter;
-            if (search_iter->size == 0) {
-                msg = "No more items";
-                is_searching = false;
-            } else {
-                move_cursor_to_idx(search_iter->data - buffer.data());
-            }
-        }
+        is_searching = true;
+        msg = "Search: ";
+        // pattern.clear();
+        if (pattern.size() > 0) search_iter = CellSliceSearch(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern).begin();
+        move_cursor_to_idx(search_iter->data - buffer.data());
     }
     else if (is_key_hold(KEY_BACKSPACE)) {
-        if (!is_searching) {
-            pop_at_cursor();
-        } else if (pattern.size() > 0) {
-            pattern.resize(pattern.size() - 1);
-        }
+        pop_at_cursor();
     }
-    else if (is_alt_and_key_hold(KEY_BACKSPACE) && !is_searching) {
+    else if (is_alt_and_key_hold(KEY_BACKSPACE)) {
         pop_at_cursor(cursor.idx - get_idx_prev_word());
     }
     else if (is_alt_and_key_hold(KEY_F) && cursor.idx < buffer.size()) {
@@ -282,6 +284,9 @@ void TextEditor::render_msg() {
 
 void TextEditor::render() {
     Vector2 cursor_pos = get_cursor_pos();
+    if (!is_searching) {
+        put_cursor(world_to_view(cursor_pos));
+    }
     move_text_view_to_point(cursor_pos);
 
     Vector2 render_cursor = Vector2Zero();
@@ -294,7 +299,7 @@ void TextEditor::render() {
 
     for (; i < buffer.size() && render_cursor.y < text_view.y + text_view.height; i++) {
         Cell cell = buffer[i];
-        if (cfg.cursor_shape == CursorShape::Block && i == cursor.idx) {
+        if (i == cursor.idx && !is_searching && cfg.cursor_shape == CursorShape::Block) {
             cell.fg = cfg.char_at_cursor_color;
         }
         int ch_w = get_w(cell.c);
@@ -305,21 +310,17 @@ void TextEditor::render() {
             if (is_selected(i)) {
                 cell.bg = cfg.on_selection_bg;
             } else if (is_searching) {
-                // size_t start = search_iter->data - buffer.data();
-                // if (i >= start && i < start + pattern.size()) {
-                //     cell.bg = cfg.search_bg;
-                //     cell.fg = cfg.search_fg;
-                // }
+                size_t start = search_iter->data - buffer.data();
+                if (i >= start && i < start + pattern.size()) {
+                    cell.bg = cfg.search_bg;
+                    cell.fg = cfg.search_fg;
+                }
             }
             if (render_cursor.x < text_view.x + text_view.width && render_cursor.x + ch_w > text_view.x) {
                 put_cell(cell, world_to_view(render_cursor));
             }
             render_cursor.x += ch_w;
         }
-    }
-
-    if (!is_searching) {
-        put_cursor(world_to_view(cursor_pos));
     }
 
     render_line_number(line);

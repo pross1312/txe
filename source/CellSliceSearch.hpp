@@ -23,24 +23,23 @@ public:
         value_type operator*() { return ptr; }
         pointer operator->() { return &ptr; }
 
-        Iterator(const reference data, std::string_view str): data(data), slice(data), ptr(CellSlice{.data = data.data, .size = 0}), str(str) {}
+        Iterator(const reference data, std::string_view str): data(data), ptr(CellSlice{.data = data.data, .size = str.size()}), str(str) {}
         Iterator() = default;
 
         Iterator& operator++() {
             size_t str_len = str.size();
-            for (size_t i = 0; i < slice.size-str.size()+1; i++) {
+            size_t i = ptr.data - data.data + str_len;
+            for (; i < data.size - str_len; i++) {
                 size_t j = 0;
-                for (; j < str_len && slice.data[i+j].c == str[j]; j++);
+                for (; j < str_len && data.data[i+j].c == str[j]; j++);
                 if (j == str_len) {
-                    ptr.data = slice.data + i;
+                    ptr.data = data.data + i;
                     ptr.size = str_len;
-                    slice.data += i + str_len;
-                    slice.size -= i + str_len;
                     return *this;
                 }
             }
-            ptr.data = slice.data + slice.size;
-            ptr.size = 0;
+            ptr.data = data.data + data.size;
+            ptr.size = str_len;
             return *this;
         }
 
@@ -51,7 +50,7 @@ public:
         }
 
         Iterator& operator--() {
-            assert(ptr.data != data.data + data.size && "Can't search back from end");
+            // assert(ptr.data != data.data + data.size && "Can't search back from end");
             size_t str_len = str.size();
             size_t i = ptr.data - data.data;
             if (i >= str_len) {
@@ -61,16 +60,12 @@ public:
                     if (j == str_len) {
                         ptr.data = data.data + idx;
                         ptr.size = str_len;
-                        slice.data = ptr.data + str_len;
-                        slice.size = data.size - idx;
                         return *this;
                     }
                 }
             }
             ptr.data = data.data;
-            ptr.size = 0;
-            slice.data = data.data;
-            slice.size = data.size;
+            ptr.size = str_len;
             return *this;
         }
 
@@ -89,9 +84,8 @@ public:
 
     private:
         friend CellSliceSearch;
-        Iterator(value_type ptr): ptr(ptr) {}
+        Iterator(value_type data, value_type ptr, std::string_view str): data(data), ptr(ptr), str(str) {}
         value_type data;
-        value_type slice;
         value_type ptr;
         std::string_view str;
     };
@@ -100,7 +94,7 @@ public:
     CellSliceSearch() = default;
 
     Iterator begin() { return ++Iterator(slice, str); }
-    Iterator end() { return Iterator(CellSlice{.data = slice.data + slice.size, .size = 0}); }
+    Iterator end() { return Iterator(slice, CellSlice{.data = slice.data + slice.size, .size = str.size()}, str); }
 private:
     CellSlice slice;
     std::string_view str;

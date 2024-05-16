@@ -28,6 +28,7 @@ struct TextEditor: public Editor {
     bool load(const fs::path& path);
     bool save();
 
+    int handle_searching_events();
     int handle_events() override;
     void on_resize() override;
 

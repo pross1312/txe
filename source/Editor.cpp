@@ -91,6 +91,27 @@ void Editor::move_cursor_to(size_t row, size_t col) {
     }
 }
 
+void Editor::move_cursor_to_idx(size_t idx) {
+    if (idx >= buffer.size()) {
+        cursor.idx = buffer.size();
+        cursor.row = line_size.size() - 1;
+        cursor.col = line_size[cursor.row];
+    } else {
+        cursor.idx = idx;
+        size_t line = 0;
+        while (idx >= line_size[line]) {
+            idx -= line_size[line];
+            line++;
+        }
+        cursor.row = line;
+        if (line == line_size.size()-1 && line == 0) {
+            cursor.col = 0;
+        } else {
+            cursor.col = idx;
+        }
+    }
+}
+
 size_t Editor::get_idx_prev_word() {
     bool found_word = false;
     size_t i = cursor.idx;
@@ -110,6 +131,15 @@ size_t Editor::get_idx_next_word() {
     }
     return i;
 }
+
+string Editor::get_text(size_t start, size_t end) {
+    assert(end >= start);
+    string result;
+    result.reserve(end - start);
+    while (start < buffer.size() && start < end) result.push_back(buffer[start++].c);
+    return result;
+}
+
 
 void Editor::move_cursor_up(size_t amount) {
     if (cursor.row < amount) {

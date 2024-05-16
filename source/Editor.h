@@ -44,6 +44,7 @@ public:
 
     size_t get_idx_prev_word();
     size_t get_idx_next_word();
+    std::string get_text(size_t start, size_t end = std::string::npos);
 
     virtual int handle_events();
     virtual void on_resize() {}
@@ -59,6 +60,7 @@ public:
     virtual void move_cursor_left(size_t amount);
     virtual void move_cursor_right(size_t amount);
     virtual void move_cursor_to(size_t row, size_t col);
+    virtual void move_cursor_to_idx(size_t idx);
 
     virtual void render() = 0;
 

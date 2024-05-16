@@ -138,6 +138,8 @@ int FileExplorer::handle_events() {
 }
 
 void FileExplorer::change_dir(const fs::path &path) {
+    SetWindowTitle(TextFormat("%s - Txe", path.c_str()));
+
     if (!path.is_absolute()) current_dir = fs::absolute(path);
     else current_dir = path;
     // fd --base-directory /home/dvtuong --exact-depth 1 -a -c never pro

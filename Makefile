@@ -1,4 +1,4 @@
-SRC = source/*.cpp
+SRC = source/*.[ch]pp
 DEP = source/*
 LIBDIR=./raylib-5.0_linux_amd64/lib
 INCDIR=./raylib-5.0_linux_amd64/include

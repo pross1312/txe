@@ -23,6 +23,8 @@ struct Config {
     float cursor_width = cursor_shape == CursorShape::Line ? 2 : 12;
     float cursor_height = cursor_shape == CursorShape::Underline ? 2 : line_height;
 
+    Color search_fg = GetColor(0x282828ff);
+    Color search_bg = GetColor(0x73cef4ff);
 
     Color dir_color = SKYBLUE;
     Color file_color = WHITE;

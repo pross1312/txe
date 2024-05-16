@@ -36,6 +36,7 @@ int TextEditor::handle_searching_events() {
     while ((c = GetCharPressed())) {
         pattern.push_back((char)c);
         search_iter = CellSliceSearch(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern).begin();
+        move_cursor_to_idx(search_iter->data - buffer.data());
     }
     if (is_ctrl_key(KEY_G)) {
         is_searching = false;
@@ -307,7 +308,7 @@ void TextEditor::render() {
             render_cursor.y += cfg.line_height;
             render_cursor.x = 0.0f;
         } else {
-            if (is_selected(i)) {
+            if (i != cursor.idx && is_selected(i)) {
                 cell.bg = cfg.on_selection_bg;
             } else if (is_searching) {
                 size_t start = search_iter->data - buffer.data();

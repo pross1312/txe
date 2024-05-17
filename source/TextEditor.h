@@ -1,6 +1,7 @@
 #pragma once
 #include "Editor.h"
 #include "CellSliceSearch.hpp"
+#include "Trie.hpp"
 
 #include <filesystem>
 #include <optional>
@@ -23,6 +24,8 @@ struct TextEditor: public Editor {
 
     std::optional<size_t> start_selection;
 
+    Trie trie;
+
     TextEditor(const fs::path& path);
 
     bool load(const fs::path& path);
@@ -35,6 +38,9 @@ struct TextEditor: public Editor {
 
     std::string get_selected_text();
     bool is_selected(size_t i);
+
+    bool is_keyword(CellSlice slice);
+    void highlight();
 
     void render() override;
     void render_msg();

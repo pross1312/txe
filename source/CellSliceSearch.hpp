@@ -5,11 +5,6 @@
 #include <string>
 #include <cassert>
 
-struct CellSlice {
-    Cell* data;
-    size_t size;
-};
-
 class CellSliceSearch {
 public:
     class Iterator {

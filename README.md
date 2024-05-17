@@ -17,5 +17,5 @@ $ ./txe
 - [x] Allow multiple cursor shape (block/line/underline)
 - [x] Selection
 - [x] Copy/Paste
-- [ ] Searching
-- [ ] Highlight
+- [x] Searching
+- [x] Highlight

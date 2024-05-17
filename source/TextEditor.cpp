@@ -1,5 +1,6 @@
 #include "TextEditor.h"
 #include "Helper.h"
+#include "Parser.h"
 
 #include <functional>
 #include <cstring>
@@ -19,6 +20,9 @@ TextEditor::TextEditor(const fs::path& file): Editor(Mode::Text), msg(), is_sear
         SetWindowTitle(TextFormat("%s - Txe", file.c_str()));
     }
     on_resize();
+    for (const char* str : cfg.keywords) {
+        trie.insert(str);
+    }
 }
 
 void TextEditor::on_resize() {
@@ -71,6 +75,7 @@ int TextEditor::handle_searching_events() {
 }
 
 int TextEditor::handle_events() {
+    const size_t screen_lines = (text_view.height / cfg.line_height);
     if (is_searching) return handle_searching_events();
 
     static bool is_ctrl_x = false;
@@ -109,11 +114,17 @@ int TextEditor::handle_events() {
         if (pattern.size() > 0) search_iter = CellSliceSearch(CellSlice{.data = buffer.data(), .size = buffer.size()}, pattern).begin();
         move_cursor_to_idx(search_iter->data - buffer.data());
     }
+    else if (is_alt_and_key_hold(KEY_BACKSPACE)) {
+        pop_at_cursor(cursor.idx - get_idx_prev_word());
+    }
     else if (is_key_hold(KEY_BACKSPACE)) {
         pop_at_cursor();
     }
-    else if (is_alt_and_key_hold(KEY_BACKSPACE)) {
-        pop_at_cursor(cursor.idx - get_idx_prev_word());
+    else if (is_ctrl_and_key_hold(KEY_V)) {
+        move_cursor_down(screen_lines);
+    }
+    else if (is_alt_and_key_hold(KEY_V)) {
+        move_cursor_up(screen_lines);
     }
     else if (is_alt_and_key_hold(KEY_F) && cursor.idx < buffer.size()) {
         move_cursor_right(get_idx_next_word() - cursor.idx);
@@ -283,7 +294,134 @@ void TextEditor::render_msg() {
     }
 }
 
+bool TextEditor::is_keyword(CellSlice token) {
+    Trie::Node* ptr = trie.root;
+    for (size_t i = 0; ptr != nullptr && i < token.size; i++) {
+        ptr = ptr->children[(int)token.data[i].c];
+    }
+    return ptr != nullptr && ptr->str.size() != 0;
+}
+
+void TextEditor::highlight() {
+    static auto color = [](CellSlice token, Color c) {
+        for (size_t i = 0; i < token.size; i++) token.data[i].fg = c;
+    };
+    static auto trim_left = [](CellSlice slice) {
+        while (slice.size > 0 && isspace(slice.data[0].c)) {
+            slice.data++;
+            slice.size--;
+        }
+        return slice;
+    };
+    static auto get_word = [](CellSlice slice) {
+        for (size_t i = 0; i < slice.size; i++) {
+            if (!isalnum(slice.data[i].c)) {
+                return CellSlice{slice.data, i};
+            }
+        }
+        return slice;
+    };
+    static auto get_line = [](CellSlice slice) {
+        for (size_t i = 0; i < slice.size; i++) {
+            if (slice.data[i].c == '\n') {
+                return CellSlice{slice.data, i};
+            }
+        }
+        return slice;
+    };
+    static auto get_until_char = [](CellSlice slice, char c) {
+        for (size_t i = 0; i < slice.size; i++) {
+            if (slice.data[i].c == c && slice.data[i].c != '\\') {
+                return CellSlice{slice.data, i+1};
+            }
+        }
+        return slice;
+    };
+    CellSlice slice{.data = buffer.data(), .size = buffer.size()};
+    while (slice.size > 0) {
+        slice = trim_left(slice);
+        if (slice.size == 0) break;
+        switch (slice.data[0].c) {
+            case '/': {
+                if (slice.size >= 2) {
+                    if (slice.data[1].c == '/') {
+                        CellSlice line = get_line(slice);
+                        color(line, cfg.comment_color);
+                        slice.data += line.size;
+                        slice.size -= line.size;
+                    }
+                    else if (slice.data[1].c == '*') {
+                        CellSlice comment = slice;
+                        while (slice.size >= 2 && (slice.data[0].c != '*' || slice.data[1].c != '/')) {
+                            slice.data++;
+                            slice.size--;
+                        }
+                        if (slice.size >= 2) {
+                            slice.data += 2;
+                            slice.size -= 2;
+                        } else {
+                            slice.data += 1;
+                            slice.size -= 1;
+                        }
+                        comment.size -= slice.size;
+                        color(comment, cfg.comment_color);
+                    } else {
+                        slice.data++;
+                        slice.size--;
+                    }
+                } else {
+                    slice.data++;
+                    slice.size--;
+                }
+            } break;
+            case '"': {
+                slice.data++; slice.size--;
+                CellSlice string = get_until_char(slice, '"');
+                slice.data += string.size;
+                slice.size -= string.size;
+                string.data--; string.size++;
+                color(string, cfg.string_color);
+            } break;
+            case '#': {
+                CellSlice directive = slice;
+                slice.data++; slice.size--;
+                slice = trim_left(slice);
+                CellSlice word = get_word(slice);
+                directive.size = (word.data - directive.data) + word.size;
+                color(directive, cfg.directive_color);
+                slice.data += word.size; slice.size -= word.size;
+                CellSlice line = get_line(slice);
+                color(line, cfg.string_color);
+                slice.data += line.size; slice.size -= line.size;
+            } break;
+            case '\'': {
+                size_t len = (size_t)std::min((unsigned long long)slice.size, 3ull);
+                color(CellSlice{slice.data,  len}, cfg.string_color);
+                slice.data += len; slice.size -= len;
+            } break;
+            default: {
+                 if (isalnum(slice.data[0].c)) {
+                     CellSlice word = get_word(slice);
+                     if (is_keyword(word)) color(word, cfg.keyword_color);
+                     else color(word, DEFAULT_FG);
+                     slice.data += word.size;
+                     slice.size -= word.size;
+                 } else {
+                     // TraceLog(LOG_ERROR, "Can't parse %c", slice.data[0].c);
+                     slice.data[0].fg = DEFAULT_FG;
+                     slice.data++; slice.size--;
+                 }
+            }
+        }
+    }
+}
+
 void TextEditor::render() {
+    const string extension = current_file.extension().string();
+    if (extension == ".cpp" || extension == ".c" || extension == ".hpp" || extension == ".h" || extension == ".cc") {
+        highlight();
+    }
+
     Vector2 cursor_pos = get_cursor_pos();
     if (!is_searching) {
         put_cursor(world_to_view(cursor_pos));

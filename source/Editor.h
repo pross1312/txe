@@ -12,6 +12,10 @@ struct Cell {
     Color fg;
     std::optional<Color> bg;
 };
+struct CellSlice {
+    Cell* data;
+    size_t size;
+};
 
 struct Cursor { size_t row = 0, col = 0; size_t idx = 0; };
 enum Mode     { Text, File };

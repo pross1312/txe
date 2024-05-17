@@ -3,6 +3,7 @@
 #include "Helper.h"
 
 #include <raylib.h>
+#include <vector>
 enum CursorShape {
     Block, Line, Underline
 };
@@ -26,6 +27,11 @@ struct Config {
     Color search_fg = GetColor(0x282828ff);
     Color search_bg = GetColor(0x73cef4ff);
 
+    Color keyword_color = GetColor(0xc9d05cff);
+    Color directive_color = GetColor(0xb3deefff);
+    Color comment_color = GetColor(0x757575ff);
+    Color string_color = GetColor(0xd3b987ff);
+
     Color dir_color = SKYBLUE;
     Color file_color = WHITE;
     Color on_cursor_bg_color = GetColor(0x535353ff);
@@ -40,6 +46,12 @@ struct Config {
     float line_number_width = 70.0f;
     float msg_box_height = line_height + 5.0f;
     const char* list_words = " ;:<>.,!@#$%^&*-=+()[]{}\n\t\r";
+    std::vector<const char*> keywords = {
+        "#include", "#ifdef", "#ifndef", "#endif", "#define", "#pragma",
+        "unsigned", "int", "float", "double", "size_t", "char", "void", "const", "constexpr",
+        "enum", "class", "struct", "return", "if", "else", "while", "for", "switch", "case", "default", "break", "continue",
+        "inline", "static", "using", "namespace", "typedef"
+    };
 };
 
 #endif // CONFIG_H

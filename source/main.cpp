@@ -47,7 +47,7 @@ int main(int argc, const char **argv) {
     if (argc > 1) {
         editor = new TextEditor(argv[1]);
     } else {
-        // editor = new FileExplorer;
+        editor = new TextEditor;
     }
     while (!WindowShouldClose()) {
         if (IsWindowResized()) {
@@ -64,15 +64,20 @@ int main(int argc, const char **argv) {
         if (editor->handle_events() == 1) {
             switch (editor->type) {
             case Mode::Text: {
-                // TextEditor *tx = static_cast<TextEditor*>(editor);
-                // Editor* new_editor = new FileExplorer(fs::absolute(tx->current_file).parent_path());
-                // delete editor;
-                // editor = new_editor;
+                TextEditor *tx = static_cast<TextEditor*>(editor);
+                Editor* new_editor = nullptr;
+                if (tx->current_file.has_value()) {
+                    new_editor = new FileExplorer(fs::absolute(tx->current_file.value()).parent_path());
+                } else {
+                    new_editor = new FileExplorer();
+                }
+                delete editor;
+                editor = new_editor;
             } break;
             case Mode::File: {
-                // Editor* new_editor = new TextEditor(static_cast<FileExplorer*>(editor)->get_file());
-                // delete editor;
-                // editor = new_editor;
+                Editor* new_editor = new TextEditor(static_cast<FileExplorer*>(editor)->get_file());
+                delete editor;
+                editor = new_editor;
             } break;
             }
         }

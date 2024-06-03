@@ -6,6 +6,13 @@ using namespace std;
 
 extern Config _cfg;
 
+void Editor::put_str(StringView sv, Attr attr, Vector2 position) {
+    for (char ch : sv) {
+        put_cell(ch, attr, position);
+        position.x += _cfg.char_w(ch);
+    }
+}
+
 void Editor::put_cell(char ch, Attr attr, Vector2 position, size_t times) {
     static char BUF[2] {};
     if (ch == '\t') { // replace tab with space

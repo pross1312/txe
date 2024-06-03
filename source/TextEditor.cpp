@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <cstring>
+#include <exception>
 #include <numeric>
 #include <cassert>
 #include <fstream>
@@ -10,38 +11,58 @@ using namespace std;
 extern Config _cfg;
 constexpr float SEPERATE_PADDING = 10.0f;
 
-TextEditor::TextEditor(const fs::path& file): Editor(Mode::Text), attributes(), pattern(true) {
-    assert(!fs::is_directory(file) && "Must create TextEditor with a file");
-    if (!load(file)) {
-        TraceLog(LOG_INFO, current_file.c_str());
-        SetWindowTitle("Txe");
-    } else {
-        SetWindowTitle(TextFormat("%s - Txe", file.c_str()));
-    }
+TextEditor::TextEditor(): Editor(Mode::Text), input(true) {
     on_resize();
     for (const char* str : _cfg.keywords) {
         trie.insert(str);
     }
 
-    pattern.event_handler = [&](TextEdit& self) {
-        char c;
-        while ((c = GetCharPressed())) {
-            self.append_at_cursor(c);
-            search_iter = Searcher(buffer.buffer, self.buffer).begin();
+    input.on_text_changed = [&](StringView text) {
+        if (input_type == InputType::Search) {
+            search_iter = Searcher(buffer.buffer, text).begin();
             buffer.move_cursor_to_idx(search_iter->data - buffer.data());
+        } else if (input_type == InputType::YesNo && text.size > 0) {
+            assert(text.size == 1 && "-_- only y or n");
+            if (tolower(text[0]) == 'y') {
+                if (save(current_file.value())) {
+                    msg = TextFormat("\"%s\" - Saved", current_file.value().c_str());
+                } else {
+                    msg = TextFormat("Can't save to file %s", current_file.value().c_str());
+                }
+            }
+            input.clear();
+            input_type = InputType::None;
         }
+    };
+
+    input.event_handler = [&](TextEdit& self) {
         if (is_key_hold(KEY_ENTER)) {
-            buffer.move_cursor_to_idx(search_iter->data - buffer.data());
-            is_searching = false;
+            if (input_type == InputType::Search) {
+                buffer.move_cursor_to_idx(search_iter->data - buffer.data());
+                input_type = InputType::None;
+                input.clear();
+            } else if (input_type == InputType::ReadFileName) {
+                current_file = fs::absolute(self.buffer);
+                if (fs::exists(current_file.value())) {
+                    msg = TextFormat("\"%s\" exist - overwrite ? [y/n]: ", current_file.value().c_str());
+                    input.clear();
+                    input_type = InputType::YesNo;
+                } else {
+                    save(current_file.value());
+                    const string extension = current_file.value().extension().string();
+                    if (extension == ".cpp" || extension == ".c" || extension == ".hpp" || extension == ".h" || extension == ".cc") {
+                        is_c_file = true;
+                    }
+                    msg = TextFormat("\"%s\" - Saved", current_file.value().c_str());
+                    input.clear();
+                    input_type = InputType::None;
+                }
+            } else {
+                throw std::runtime_error("Unknown input type");
+            }
             return true;
         }
-        if (is_key_hold(KEY_BACKSPACE) && self.size() > 0) {
-            self.pop_at_cursor();
-            Searcher searcher(buffer.buffer, self.buffer);
-            search_iter = searcher.begin();
-            return true;
-        }
-        if (is_ctrl_key(KEY_S)) {
+        if (input_type == InputType::Search && is_ctrl_key(KEY_S)) {
             ++search_iter;
             Searcher searcher(buffer.buffer, self.buffer);
             if (search_iter == searcher.end()) {
@@ -50,7 +71,7 @@ TextEditor::TextEditor(const fs::path& file): Editor(Mode::Text), attributes(), 
             buffer.move_cursor_to_idx(search_iter->data - buffer.data());
             return true;
         }
-        if (is_ctrl_key(KEY_N)) {
+        if (input_type == InputType::Search && is_ctrl_key(KEY_N)) {
             Searcher searcher(buffer.buffer, self.buffer);
             if (search_iter == searcher.begin()) {
                 search_iter = searcher.end();
@@ -61,6 +82,16 @@ TextEditor::TextEditor(const fs::path& file): Editor(Mode::Text), attributes(), 
         }
         return false;
     };
+}
+
+TextEditor::TextEditor(const fs::path& file): TextEditor() {
+    assert(!fs::is_directory(file) && "Must create TextEditor with a file");
+    if (!load(file)) {
+        TraceLog(LOG_INFO, current_file.value().c_str());
+        SetWindowTitle("Txe");
+    } else {
+        SetWindowTitle(TextFormat("%s - Txe", file.c_str()));
+    }
 }
 
 StringView TextEditor::get_selected_text() {
@@ -210,10 +241,11 @@ void TextEditor::render_msg() {
             pos.x += _cfg.char_w(msg[i]);
         }
     }
-    if (is_searching) {
-        for (char ch : pattern.buffer) {
-            put_cell(ch, Attr{.fg = DEFAULT_FG, .bg = nullopt}, pos);
-            pos.x += _cfg.char_w(ch);
+    if (input_type != InputType::None) {
+        put_cursor(Vector2{.x = pos.x + input.get_cursor_pos().x, .y = pos.y});
+        for (size_t i = 0; i < input.size(); i++) {
+            put_cell(input[i], Attr{.fg = i == input.cursor.idx ? _cfg.char_at_cursor_color : DEFAULT_FG, .bg = nullopt}, pos);
+            pos.x += _cfg.char_w(input[i]);
         }
     }
 }
@@ -230,7 +262,7 @@ void TextEditor::render() {
     if (is_c_file) highlight();
     Vector2 cursor_pos = buffer.get_cursor_pos();
     move_text_view_to_point(cursor_pos);
-    if (!is_searching) {
+    if (input_type == InputType::None) {
         put_cursor(world_to_view(cursor_pos));
     }
     Vector2 render_cursor = Vector2Zero();
@@ -242,7 +274,7 @@ void TextEditor::render() {
     for (; i < buffer.size() && render_cursor.y < text_view.y + text_view.height; i++) {
         Attr attr;
         if (is_c_file) attr = attributes[i];
-        if (i == buffer.cursor.idx && !is_searching && _cfg.cursor_shape == CursorShape::Block) {
+        if (i == buffer.cursor.idx && input_type == InputType::None && _cfg.cursor_shape == CursorShape::Block) {
             attr.fg = _cfg.char_at_cursor_color;
         }
         int ch_w = _cfg.char_w(buffer[i]);
@@ -252,9 +284,9 @@ void TextEditor::render() {
         } else {
             if (i != buffer.cursor.idx && is_selected(i)) {
                 attr.bg = _cfg.on_selection_bg;
-            } else if (is_searching) {
+            } else if (input_type == InputType::Search) {
                 size_t start = search_iter->data - buffer.data();
-                if (i >= start && i < start + pattern.size()) {
+                if (i >= start && i < start + input.size()) {
                     attr.bg = _cfg.search_bg;
                     attr.fg = _cfg.search_fg;
                 }
@@ -269,118 +301,119 @@ void TextEditor::render() {
     render_msg();
 }
 
-int TextEditor::handle_searching_events() {
-    if (is_ctrl_key(KEY_G)) {
-        is_searching = false;
-        msg = "CTRL-G";
-    } else {
-        pattern.handle_events();
-    }
-    return 0;
-}
-
 int TextEditor::handle_events() {
-    const size_t screen_lines = (text_view.height / _cfg.line_height);
-    if (is_searching) return handle_searching_events();
-
     static bool is_ctrl_x = false;
-    TextEdit::Cursor& cursor = buffer.cursor;
+    const size_t screen_lines = (text_view.height / _cfg.line_height);
 
-    buffer.handle_events();
     if (is_ctrl_key(KEY_G)) {
+        input_type = InputType::None;
+        input_type = InputType::None;
         is_ctrl_x = false;
         start_selection = nullopt;
+        input.clear();
         msg = "CTRL-G";
+    } else if (input_type != InputType::None) {
+        input.handle_events();
+        return 0;
     }
+
+    TextEdit::Cursor& cursor = buffer.cursor;
     if (is_ctrl_x) {
         if (is_ctrl_key(KEY_S)) {
             is_ctrl_x = false;
-            if (save()) {
-                msg = "Saved";
+            if (current_file.has_value()) {
+                if (save(current_file.value())) {
+                    msg = TextFormat("\"%s\" - Saved", current_file.value().c_str());
+                } else {
+                    msg = TextFormat("Can't save to file %s", current_file.value().c_str());
+                }
             } else {
-                msg = TextFormat("Can't save to file %s", current_file.c_str());
+                msg = "Filename: ";
+                input_type = InputType::ReadFileName;
             }
         } else if (is_ctrl_key(KEY_F)) {
             is_ctrl_x = false;
             return 1;
-        } else if (is_ctrl_key(KEY_C)) exit(0);
-    }
-    else if (is_ctrl_key(KEY_S)) {
-        is_searching = true;
-        msg = "Search: ";
-        // pattern.clear();
-        if (pattern.size() > 0) search_iter = Searcher(buffer.buffer, pattern.buffer).begin();
-        buffer.move_cursor_to_idx(search_iter->data - buffer.data());
-    }
-    else if (is_ctrl_and_key_hold(KEY_V)) buffer.move_cursor_down(screen_lines);
-    else if (is_alt_and_key_hold(KEY_V)) buffer.move_cursor_up(screen_lines);
-    else if (is_ctrl_key(KEY_X)) {
-        is_ctrl_x = true;
-        msg = "CTRL-X ..";
-    }
-    else if (is_ctrl_key(KEY_SPACE)) {
-        if (start_selection.has_value()) {
+        }
+    } else {
+        buffer.handle_events();
+        if (is_ctrl_key(KEY_S)) {
+            input_type = InputType::Search;
+            msg = "Search: ";
+            // input.clear();
+            if (input.size() > 0) search_iter = Searcher(buffer.buffer, input.buffer).begin();
+            buffer.move_cursor_to_idx(search_iter->data - buffer.data());
+        }
+        else if (is_ctrl_and_key_hold(KEY_V)) buffer.move_cursor_down(screen_lines);
+        else if (is_alt_and_key_hold(KEY_V)) buffer.move_cursor_up(screen_lines);
+        else if (is_ctrl_key(KEY_X)) {
+            is_ctrl_x = true;
+            msg = "CTRL-X ..";
+        }
+        else if (is_ctrl_key(KEY_SPACE)) {
+            if (start_selection.has_value()) {
+                start_selection = nullopt;
+            } else {
+                start_selection = cursor.idx;
+            }
+            msg = "Marking ..";
+        }
+        else if (is_alt_key(KEY_W) && start_selection.has_value()) {
+            StringView selected_text = get_selected_text();
+            SetClipboardText(string(selected_text).c_str());
             start_selection = nullopt;
-        } else {
-            start_selection = cursor.idx;
         }
-        msg = "Marking ..";
-    }
-    else if (is_alt_key(KEY_W) && start_selection.has_value()) {
-        StringView selected_text = get_selected_text();
-        SetClipboardText(string(selected_text).c_str());
-        start_selection = nullopt;
-    }
-    else if (is_ctrl_key(KEY_Y)) {
-        const char* text = GetClipboardText();
-        if (text != nullptr) {
-            buffer.append_at_cursor(text);
+        else if (is_ctrl_key(KEY_Y)) {
+            const char* text = GetClipboardText();
+            if (text != nullptr) {
+                buffer.append_at_cursor(text);
+            }
         }
-    }
-    else if (is_ctrl_key(KEY_W) && start_selection.has_value()) {
-        StringView selected_text = get_selected_text();
-        SetClipboardText(string(selected_text).c_str());
+        else if (is_ctrl_key(KEY_W) && start_selection.has_value()) {
+            StringView selected_text = get_selected_text();
+            SetClipboardText(string(selected_text).c_str());
 
-        size_t start = start_selection.value();
-        if (cursor.idx > start) {
-            buffer.pop_at_cursor(cursor.idx - start);
-        } else {
-            size_t amount = start - cursor.idx;
-            buffer.move_cursor_right(amount);
-            buffer.pop_at_cursor(amount);
+            size_t start = start_selection.value();
+            if (cursor.idx > start) {
+                buffer.pop_at_cursor(cursor.idx - start);
+            } else {
+                size_t amount = start - cursor.idx;
+                buffer.move_cursor_right(amount);
+                buffer.pop_at_cursor(amount);
+            }
+            start_selection = nullopt;
         }
-        start_selection = nullopt;
-    }
-    else if (is_ctrl_key(KEY_K)) {
-        const size_t last_col = buffer.line_size[cursor.row] - (cursor.row == buffer.line_size.size()-1 ? 0 : 1);
-        size_t start = cursor.idx;
-        if (cursor.col == last_col) {
-            buffer.move_cursor_to(cursor.row+1, 0);
-            buffer.pop_at_cursor(cursor.idx - start);
-        } else {
-            buffer.move_cursor_to(cursor.row, last_col);
-            StringView cut_text(buffer.data() + start, cursor.idx - start);
-            SetClipboardText(string(cut_text).c_str());
-            buffer.pop_at_cursor(cursor.idx - start);
+        else if (is_ctrl_key(KEY_K)) {
+            const size_t last_col = buffer.line_size[cursor.row] - (cursor.row == buffer.line_size.size()-1 ? 0 : 1);
+            size_t start = cursor.idx;
+            if (cursor.col == last_col) {
+                buffer.move_cursor_to(cursor.row+1, 0);
+                buffer.pop_at_cursor(cursor.idx - start);
+            } else {
+                buffer.move_cursor_to(cursor.row, last_col);
+                StringView cut_text(buffer.data() + start, cursor.idx - start);
+                SetClipboardText(string(cut_text).c_str());
+                buffer.pop_at_cursor(cursor.idx - start);
+            }
+            start_selection = nullopt;
         }
-        start_selection = nullopt;
-    }
-    else if (IsKeyDown(KEY_LEFT_ALT) && IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_COMMA)) {
-        cursor.idx = 0;
-        cursor.row = 0;
-        cursor.col = 0;
-    }
-    else if (IsKeyDown(KEY_LEFT_ALT) && IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_PERIOD)) {
-        cursor.idx = buffer.size();
-        cursor.row = buffer.line_size.size()-1;
-        cursor.col = buffer.line_size[cursor.row];
+        else if (IsKeyDown(KEY_LEFT_ALT) && IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_COMMA)) {
+            cursor.idx = 0;
+            cursor.row = 0;
+            cursor.col = 0;
+        }
+        else if (IsKeyDown(KEY_LEFT_ALT) && IsKeyDown(KEY_LEFT_SHIFT) && IsKeyPressed(KEY_PERIOD)) {
+            cursor.idx = buffer.size();
+            cursor.row = buffer.line_size.size()-1;
+            cursor.col = buffer.line_size[cursor.row];
+        }
     }
     return 0;
 }
 
 bool TextEditor::load(const fs::path& file) {
     current_file = fs::absolute(file);
-    const string extension = current_file.extension().string();
+    const string extension = current_file.value().extension().string();
     if (extension == ".cpp" || extension == ".c" || extension == ".hpp" || extension == ".h" || extension == ".cc") {
         is_c_file = true;
     }
@@ -404,17 +437,13 @@ bool TextEditor::load(const fs::path& file) {
     return true;
 }
 
-bool TextEditor::save() {
-    std::ofstream fout(current_file);
+bool TextEditor::save(const fs::path& file_path) {
+    std::ofstream fout(file_path);
     if (!fout.is_open()) {
-        TraceLog(LOG_ERROR, "Can't open file %s", current_file.c_str());
+        TraceLog(LOG_ERROR, "Can't open file %s", file_path.c_str());
         return false;
     }
-
-    for (size_t i = 0; i < buffer.size(); i++) {
-        fout << buffer[i];
-    }
-
+    fout << buffer.buffer;
     fout.close();
     return true;
 }

@@ -56,6 +56,10 @@ struct Config {
 
     int char_w(char c) const {
         static char BUF[2] {};
+        if (c == '\t') {
+            BUF[0] = ' ';
+            return tab_size * MeasureTextEx(font, BUF, font_size, spacing).x;
+        }
         BUF[0] = c;
         return MeasureTextEx(font, BUF, font_size, spacing).x;
     }

@@ -11,7 +11,7 @@ struct TextEdit {
     struct Cursor { size_t row = 0, col = 0; size_t idx = 0; } cursor;
 
     std::function<bool(TextEdit&)> event_handler;
-    std::function<bool(char, TextEdit&)> on_char_pressed;
+    std::function<void(StringView text)> on_text_changed;
 
     bool oneline = false;
 
@@ -41,4 +41,10 @@ struct TextEdit {
     void move_cursor_to_idx(size_t idx);
 
     Vector2 get_cursor_pos();
+    inline void clear() {
+        buffer.clear();
+        line_size.resize(1);
+        line_size[0] = 0;
+        cursor.row = cursor.idx = cursor.col = 0;
+    }
 };

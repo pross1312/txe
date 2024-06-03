@@ -30,7 +30,7 @@ struct StringView {
         Iterator() = default;
 
         Iterator& operator++() {
-            if (idx < data.size) ch = data[idx++];
+            if (idx < data.size) ch = data[++idx];
             return *this;
         }
 
@@ -42,7 +42,7 @@ struct StringView {
 
         Iterator& operator--() {
             if (idx == 0) return *this;
-            ch = data[idx--];
+            ch = data[--idx];
             return *this;
         }
 

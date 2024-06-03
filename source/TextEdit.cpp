@@ -11,18 +11,39 @@ void TextEdit::handle_events() {
     if (event_handler && event_handler(*this)) return;
     char c;
     while ((c = GetCharPressed())) {
-        if (!on_char_pressed || !on_char_pressed((char)c, *this)) append_at_cursor((char)c);
+        append_at_cursor((char)c);
+        if (on_text_changed) on_text_changed(StringView(buffer));
     }
-    if (!oneline && IsKeyPressed(KEY_ENTER)) append_at_cursor('\n');
-    if (IsKeyPressed(KEY_TAB)) append_at_cursor('\t');
+    if (!oneline && IsKeyPressed(KEY_ENTER)) {
+        append_at_cursor('\n');
+        if (on_text_changed) on_text_changed(StringView(buffer));
+    }
+    if (IsKeyPressed(KEY_TAB)) {
+        append_at_cursor('\t');
+        if (on_text_changed) on_text_changed(StringView(buffer));
+    }
     if (is_key_hold(KEY_LEFT) || is_ctrl_and_key_hold(KEY_B)) move_cursor_left(1);
     if (is_key_hold(KEY_RIGHT) || is_ctrl_and_key_hold(KEY_F)) move_cursor_right(1);
     if (!oneline && (is_key_hold(KEY_UP) || is_ctrl_and_key_hold(KEY_P))) move_cursor_up(1);
     if (!oneline && (is_key_hold(KEY_DOWN) || is_ctrl_and_key_hold(KEY_N))) move_cursor_down(1);
-    if (is_key_hold(KEY_BACKSPACE)) pop_at_cursor(1);
-    if (is_alt_and_key_hold(KEY_BACKSPACE)) pop_at_cursor(cursor.idx - get_idx_prev_word());
+    if (is_key_hold(KEY_BACKSPACE)) {
+        pop_at_cursor(1);
+        if (on_text_changed) on_text_changed(StringView(buffer));
+    }
+    if (is_alt_and_key_hold(KEY_BACKSPACE)) {
+        pop_at_cursor(cursor.idx - get_idx_prev_word());
+        if (on_text_changed) on_text_changed(StringView(buffer));
+    }
     if (is_alt_and_key_hold(KEY_F)) move_cursor_right(get_idx_next_word() - cursor.idx);
     if (is_alt_and_key_hold(KEY_B)) move_cursor_left(cursor.idx - get_idx_prev_word());
+    if (is_ctrl_key(KEY_A)) move_cursor_to(cursor.row, 0);
+    if (is_ctrl_key(KEY_E)) move_cursor_to(cursor.row, line_size[cursor.row] - (cursor.row == line_size.size()-1 ? 0 : 1));
+    if (is_ctrl_key(KEY_K)) {
+        size_t prev = cursor.idx;
+        move_cursor_to(cursor.row, line_size[cursor.row] - (cursor.row == line_size.size()-1 ? 0 : 1));
+        pop_at_cursor(cursor.idx - prev);
+        if (on_text_changed) on_text_changed(StringView(buffer));
+    }
 }
 
 void TextEdit::add_new_line(size_t size) {
@@ -206,7 +227,11 @@ Vector2 TextEdit::get_cursor_pos() {
     Vector2 result { 0.0f, (float)_cfg.line_height * cursor.row };
     for (size_t i = cursor.idx - cursor.col; i < cursor.idx; i++) {
         char ch = buffer[i];
-        result.x += _cfg.char_w(ch);
+        if (ch == '\t') {
+            result.x += _cfg.tab_size * _cfg.char_w(' ');
+        } else {
+            result.x += _cfg.char_w(ch);
+        }
     }
     return result;
 }

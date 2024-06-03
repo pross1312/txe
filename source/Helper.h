@@ -1,25 +1,12 @@
 #pragma once
+#include "StringView.hpp"
 #include <raylib.h>
-#include <string>
-#include <cstring>
-
-struct StringView {
-    const char* data;
-    size_t size;
-    char operator[](size_t i) { return data[i]; }
-    StringView(): data(nullptr), size(0) {}
-    StringView(const std::string& str): data(str.data()), size(str.size()) {}
-    StringView(const char* str, size_t size): data(str), size(size) {}
-    StringView(const char* str): data(str), size(strlen(str)) {}
-    operator std::string() const { return std::string(std::string_view(data, size)); }
-    operator std::string_view() const { return std::string_view(data, size); }
-};
 
 inline float calculate_luminance(Color c){
     return (float) (0.2126*c.r + 0.7152*c.g + 0.0722*c.b);
 }
 
-inline bool is_char_in(char ch, std::string_view str) {
+inline bool is_char_in(char ch, StringView str) {
     for (char c : str) {
         if (c == ch) return true;
     }
@@ -126,37 +113,4 @@ inline int DamerauLevenshteinDistance(std::string_view source, std::string_view 
 
 inline bool is_rect_in_view(float x, float y, float w, float h) {
     return !(x + w <= 0.0f || y + h <= 0.0f || x >= 0.0f + GetScreenWidth() || y >= 0.0f + GetScreenHeight());
-}
-
-inline StringView trim_left(StringView sv) {
-    size_t i = 0;
-    while (i < sv.size && isspace(sv[i])) i++;
-    return StringView(sv.data + i, sv.size - i);
-}
-
-inline StringView get_word(StringView sv) {
-    for (size_t i = 0; i < sv.size; i++) {
-        if (!isalnum(sv[i]) && sv[i] != '_') {
-            return StringView(sv.data, i);
-        }
-    }
-    return sv;
-};
-
-inline StringView get_line(StringView sv) {
-    for (size_t i = 0; i < sv.size; i++) {
-        if (sv[i] == '\n') {
-            return StringView(sv.data, i);
-        }
-    }
-    return sv;
-};
-
-inline StringView get_until_char(StringView sv, char c) {
-    for (size_t i = 0; i < sv.size; i++) {
-        if (sv[i] == c && sv[i] != '\\') {
-            return StringView(sv.data, i+1);
-        }
-    }
-    return sv;
 }

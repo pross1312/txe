@@ -25,11 +25,11 @@ struct TextEdit {
 
     size_t get_idx_prev_word();
     size_t get_idx_next_word();
-    std::string_view get_text(size_t start, size_t end = std::string::npos);
+    StringView get_text(size_t start, size_t end);
 
 
     void add_new_line(size_t size);
-    void append_at_cursor(std::string_view str);
+    void append_at_cursor(StringView str);
     void append_at_cursor(char c);
     void pop_at_cursor(size_t amount = 1);
 

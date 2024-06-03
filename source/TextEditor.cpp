@@ -27,36 +27,36 @@ TextEditor::TextEditor(const fs::path& file): Editor(Mode::Text), attributes(), 
         char c;
         while ((c = GetCharPressed())) {
             self.append_at_cursor(c);
-            search_iter = Searcher(string_view(buffer.buffer), self.buffer).begin();
-            buffer.move_cursor_to_idx(search_iter->data() - buffer.data());
+            search_iter = Searcher(buffer.buffer, self.buffer).begin();
+            buffer.move_cursor_to_idx(search_iter->data - buffer.data());
         }
         if (is_key_hold(KEY_ENTER)) {
-            buffer.move_cursor_to_idx(search_iter->data() - buffer.data());
+            buffer.move_cursor_to_idx(search_iter->data - buffer.data());
             is_searching = false;
             return true;
         }
         if (is_key_hold(KEY_BACKSPACE) && self.size() > 0) {
             self.pop_at_cursor();
-            Searcher searcher(string_view(buffer.buffer), self.buffer);
+            Searcher searcher(buffer.buffer, self.buffer);
             search_iter = searcher.begin();
             return true;
         }
         if (is_ctrl_key(KEY_S)) {
             ++search_iter;
-            Searcher searcher(string_view(buffer.buffer), self.buffer);
+            Searcher searcher(buffer.buffer, self.buffer);
             if (search_iter == searcher.end()) {
                 search_iter = searcher.begin();
             }
-            buffer.move_cursor_to_idx(search_iter->data() - buffer.data());
+            buffer.move_cursor_to_idx(search_iter->data - buffer.data());
             return true;
         }
         if (is_ctrl_key(KEY_N)) {
-            Searcher searcher(string_view(buffer.buffer), self.buffer);
+            Searcher searcher(buffer.buffer, self.buffer);
             if (search_iter == searcher.begin()) {
                 search_iter = searcher.end();
             }
             --search_iter;
-            buffer.move_cursor_to_idx(search_iter->data() - buffer.data());
+            buffer.move_cursor_to_idx(search_iter->data - buffer.data());
             return true;
         }
         return false;
@@ -253,7 +253,7 @@ void TextEditor::render() {
             if (i != buffer.cursor.idx && is_selected(i)) {
                 attr.bg = _cfg.on_selection_bg;
             } else if (is_searching) {
-                size_t start = search_iter->data() - buffer.data();
+                size_t start = search_iter->data - buffer.data();
                 if (i >= start && i < start + pattern.size()) {
                     attr.bg = _cfg.search_bg;
                     attr.fg = _cfg.search_fg;
@@ -309,8 +309,8 @@ int TextEditor::handle_events() {
         is_searching = true;
         msg = "Search: ";
         // pattern.clear();
-        if (pattern.size() > 0) search_iter = Searcher(string_view(buffer.buffer), pattern.buffer).begin();
-        buffer.move_cursor_to_idx(search_iter->data() - buffer.data());
+        if (pattern.size() > 0) search_iter = Searcher(buffer.buffer, pattern.buffer).begin();
+        buffer.move_cursor_to_idx(search_iter->data - buffer.data());
     }
     else if (is_ctrl_and_key_hold(KEY_V)) buffer.move_cursor_down(screen_lines);
     else if (is_alt_and_key_hold(KEY_V)) buffer.move_cursor_up(screen_lines);

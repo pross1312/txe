@@ -31,7 +31,7 @@ void TextEdit::add_new_line(size_t size) {
     line_size.insert(line_size.begin() + cursor.row, size);
 }
 
-void TextEdit::append_at_cursor(string_view str) {
+void TextEdit::append_at_cursor(StringView str) {
     for (char ch : str) {
         append_at_cursor(ch);
     }
@@ -132,9 +132,9 @@ size_t TextEdit::get_idx_next_word() {
     return i;
 }
 
-string_view TextEdit::get_text(size_t start, size_t end) {
+StringView TextEdit::get_text(size_t start, size_t end) {
     assert(end >= start);
-    return string_view(buffer).substr(start, end);
+    return StringView(buffer.data() + start, end - start);
 }
 
 

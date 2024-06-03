@@ -8,10 +8,10 @@ inline constexpr int FONT_SIZE = 30;
 inline constexpr const char *FONT_PATH = "resources/fonts/iosevka-term-regular.ttf";
 inline constexpr const char *FONT_SHADER_PATH = "./resources/shaders/sdf.fs";
 
-void init_config() {
+void init_config(const fs::path& exe_dir) {
 #ifdef USE_SDF_FONT
     int file_size = 0;
-    unsigned char *file_data = LoadFileData(FONT_PATH, &file_size);
+    unsigned char *file_data = LoadFileData((exe_dir / FONT_PATH).c_str(), &file_size);
     _cfg.font.baseSize = _cfg.font_size;
     _cfg.font.glyphCount = 95;
     _cfg.font.glyphs = LoadFontData(file_data, file_size, _cfg.font_size, NULL, 0, FONT_SDF);
@@ -19,7 +19,7 @@ void init_config() {
     _cfg.font.texture = LoadTextureFromImage(atlas);
     UnloadImage(atlas);
     UnloadFileData(file_data);
-    _cfg.font_shader = LoadShader(0, FONT_SHADER_PATH);
+    _cfg.font_shader = LoadShader(0, (exe_dir / FONT_SHADER_PATH).c_str());
     SetTextureFilter(_cfg.font.texture, TEXTURE_FILTER_BILINEAR);    // Required for SDF font
 #else
     _cfg.font = LoadFont(FONT_PATH);
@@ -41,7 +41,7 @@ int main(int argc, const char **argv) {
 
     SetTargetFPS(60);
 
-    init_config();
+    init_config(fs::absolute(argv[0]).parent_path());
 
     Editor *editor = nullptr;
     if (argc > 1) {

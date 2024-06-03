@@ -1,9 +1,6 @@
-#include "TextEditor.h"
 #include "Helper.h"
+#include "TextEditor.h"
 #include "FileExplorer.h"
-
-#include <stdio.h>
-#include <string.h>
 
 Config _cfg;
 
@@ -50,7 +47,7 @@ int main(int argc, const char **argv) {
     if (argc > 1) {
         editor = new TextEditor(argv[1]);
     } else {
-        editor = new FileExplorer;
+        // editor = new FileExplorer;
     }
     while (!WindowShouldClose()) {
         if (IsWindowResized()) {
@@ -67,15 +64,15 @@ int main(int argc, const char **argv) {
         if (editor->handle_events() == 1) {
             switch (editor->type) {
             case Mode::Text: {
-                TextEditor *tx = static_cast<TextEditor*>(editor);
-                Editor* new_editor = new FileExplorer(fs::absolute(tx->current_file).parent_path());
-                delete editor;
-                editor = new_editor;
+                // TextEditor *tx = static_cast<TextEditor*>(editor);
+                // Editor* new_editor = new FileExplorer(fs::absolute(tx->current_file).parent_path());
+                // delete editor;
+                // editor = new_editor;
             } break;
             case Mode::File: {
-                Editor* new_editor = new TextEditor(static_cast<FileExplorer*>(editor)->get_file());
-                delete editor;
-                editor = new_editor;
+                // Editor* new_editor = new TextEditor(static_cast<FileExplorer*>(editor)->get_file());
+                // delete editor;
+                // editor = new_editor;
             } break;
             }
         }

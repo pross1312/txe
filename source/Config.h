@@ -9,6 +9,7 @@ enum CursorShape {
 };
 const Color DEFAULT_BG = GetColor(0x282828ff);
 const Color DEFAULT_FG = WHITE;
+
 struct Config {
     Font font;
     int font_size = 30;
@@ -48,10 +49,16 @@ struct Config {
     const char* list_words = " ;:<>.,!@#$%^&*-=+()[]{}\n\t\r";
     std::vector<const char*> keywords = {
         "#include", "#ifdef", "#ifndef", "#endif", "#define", "#pragma",
-        "unsigned", "int", "float", "double", "size_t", "char", "void", "const", "constexpr",
+        "unsigned", "int", "float", "double", "bool", "size_t", "char", "void", "const", "constexpr",
         "enum", "class", "struct", "return", "if", "else", "while", "for", "switch", "case", "default", "break", "continue",
-        "inline", "static", "using", "namespace", "typedef"
+        "inline", "static", "using", "namespace", "typedef", "friend", "public", "private", "virtual"
     };
+
+    int char_w(char c) const {
+        static char BUF[2] {};
+        BUF[0] = c;
+        return MeasureTextEx(font, BUF, font_size, spacing).x;
+    }
 };
 
 #endif // CONFIG_H
